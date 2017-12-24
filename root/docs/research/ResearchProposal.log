@@ -1,9 +1,9 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/W32TeX) (preloaded format=pdflatex 2017.11.26)  24 DEC 2017 02:14
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/W32TeX) (preloaded format=pdflatex 2017.11.26)  24 DEC 2017 16:18
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
-**./SourcesList.tex
-(./SourcesList.tex
+**./ResearchProposal.tex
+(./ResearchProposal.tex
 LaTeX2e <2017-04-15>
 Babel <3.15> and hyphenation patterns for 84 language(s) loaded.
 (c:/texlive/2017/texmf-dist/tex/latex/base/article.cls
@@ -725,23 +725,24 @@ File: pdftex.def 2017/06/24 v1.0g Graphics/color driver for pdftex
 \WF@box=\box28
 \WF@everypar=\toks28
 Package: wrapfig 2003/01/31  v 3.6
-) (./SourcesList.aux)
-\openout1 = `SourcesList.aux'.
+)
+(./ResearchProposal.aux)
+\openout1 = `ResearchProposal.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
-LaTeX Font Info:    Checking defaults for T2A/cmr/m/n on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
+LaTeX Font Info:    Checking defaults for T2A/cmr/m/n on input line 28.
+LaTeX Font Info:    ... okay on input line 28.
 
 (c:/texlive/2017/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
@@ -812,67 +813,105 @@ G,.JBIG2,.JB2,.eps]
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))<<ot1.cmap>><<oml.cmap>><<oms.cmap>><<omx.cmap>>
-LaTeX Font Info:    Try loading font information for U+msa on input line 31.
+LaTeX Font Info:    Try loading font information for U+msa on input line 30.
 
 (c:/texlive/2017/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 31.
+LaTeX Font Info:    Try loading font information for U+msb on input line 30.
 
 (c:/texlive/2017/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-Underfull \hbox (badness 10000) in paragraph at lines 41--42
+Overfull \hbox (10.4953pt too wide) in paragraph at lines 40--41
+\T2A/cmr/m/n/12 дерева, пред-став-лен-ное в NIST Dictionary of Algorithms and D
+ata Structures. 
+ []
+
+[1
+
+{c:/texlive/2017/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [2]
+Overfull \hbox (12.08832pt too wide) in paragraph at lines 68--69
+[]\T2A/cmr/m/n/12 При ре-а-ли-за-ции функ-ции по-ис-ка в ви-де ре-кур-сии по-тр
+е-бу-ет-ся $\OML/cmm/m/it/12 O\OT1/cmr/m/n/12 (\OML/cmm/m/it/12 t [][] n\OT1/cm
+r/m/n/12 )$
+ []
+
+[3]
+Overfull \hbox (17.30927pt too wide) in paragraph at lines 90--91
+[]\T2A/cmr/m/n/12 При ре-а-ли-за-ции функ-ции встав-ки в ви-де ре-кур-сии по-тр
+е-бу-ет-ся $\OML/cmm/m/it/12 O\OT1/cmr/m/n/12 (\OML/cmm/m/it/12 t [][] n\OT1/cm
+r/m/n/12 )$
+ []
+
+[4] [5] [6]
+Overfull \hbox (3.69205pt too wide) in paragraph at lines 122--123
+[]\T2A/cmr/m/n/12 Новые ключи-маршрутизаторы ге-не-ри-ру-ют-ся при встав-ке но-
+во-го клю-
+ []
+
+[7]
+Overfull \hbox (3.80849pt too wide) in paragraph at lines 136--136
+[]\T2A/cmr/bx/n/17.28 Проведение экс-пе-ри-мен-тов и ис-поль-зу-е-мые
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 156--157
 []\T2A/cmr/m/n/12 Washam J. An Astounding Example of Efficiency with B-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 41--42
+Underfull \hbox (badness 10000) in paragraph at lines 156--157
 \T2A/cmr/m/n/12 Trees [Electronic Source] // Startup Nextdoor. --- URL:
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 41--42
+Underfull \hbox (badness 10000) in paragraph at lines 156--157
 \T2A/cmr/m/n/12 https://startupnextdoor.com/an-astounding-example-of-efficiency
--
+-with-
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 43--44
+[8]
+Underfull \hbox (badness 10000) in paragraph at lines 158--159
 []\T2A/cmr/m/n/12 Kerttu Pollari-Malmi. $\OML/cmm/m/it/12 B[]$\T2A/cmr/m/n/12 -
 trees [Electronic Source] --- URL:
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 43--44
+Underfull \hbox (badness 10000) in paragraph at lines 158--159
 \T2A/cmr/m/n/12 https://www.cs.helsinki.fi/u/mluukkai/tirak2010/B-tree.pdf [Dat
 e:
  []
 
-[1
+[9] (./ResearchProposal.aux) )
+(\end occurred inside a group at level 1)
 
-{c:/texlive/2017/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
-(./SourcesList.aux) ) 
+### semi simple group (level 1) entered at line 146 (\begingroup)
+### bottom level 
 Here is how much of TeX's memory you used:
- 4617 strings out of 492985
- 59113 string characters out of 6136283
- 125839 words of memory out of 5000000
- 8037 multiletter control sequences out of 15000+600000
- 14925 words of font info for 48 fonts, out of 8000000 for 9000
+ 4627 strings out of 492985
+ 59290 string characters out of 6136283
+ 128893 words of memory out of 5000000
+ 8043 multiletter control sequences out of 15000+600000
+ 16562 words of font info for 50 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 41i,6n,25p,310b,201s stack positions out of 5000i,500n,10000p,200000b,80000s
- <c:/Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/pub
-lic/cm/cmsy8.600pk> <c:/texlive/2017/texmf-dist/fonts/pk/ljfour/public/cm/dpi60
-0/cmr8.pk> <c:/Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/public/cm/cmmi
-12.600pk> <c:/Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/lh/lh-t2a/larm1
-200.600pk> <c:/Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/lh/lh-t2a/labx
-1728.600pk> <c:/Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/lh/lh-t2a/lar
-m1440.600pk> <c:/Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/lh/lh-t2a/la
-rm2074.600pk>
-Output written on SourcesList.pdf (1 page, 59542 bytes).
+ 41i,6n,25p,2476b,248s stack positions out of 5000i,500n,10000p,200000b,80000s
+ <c:/Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/lh/lh-t2
+a/labx1200.600pk> <c:/Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/lh/lh-t
+2a/labx1440.600pk> <c:/Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/public
+/cm/cmmi8.600pk> <c:/Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/public/c
+m/cmsy10.720pk> <c:/texlive/2017/texmf-dist/fonts/pk/ljfour/public/cm/dpi600/cm
+r12.pk> <c:/Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/public/cm/cmsy8.6
+00pk> <c:/texlive/2017/texmf-dist/fonts/pk/ljfour/public/cm/dpi600/cmr8.pk> <c:
+/Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/public/cm/cmmi12.600pk> <c:/
+Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/lh/lh-t2a/larm1200.600pk> <c:
+/Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/lh/lh-t2a/labx1728.600pk> <c
+:/Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/lh/lh-t2a/larm1440.600pk> <
+c:/Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/lh/lh-t2a/larm2074.600pk>
+Output written on ResearchProposal.pdf (9 pages, 116706 bytes).
 PDF statistics:
- 205 PDF objects out of 1000 (max. 8388607)
- 32 compressed objects within 1 object stream
+ 372 PDF objects out of 1000 (max. 8388607)
+ 70 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  21 words of extra memory for PDF output out of 10000 (max. 10000000)
 
