@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/W32TeX) (preloaded format=pdflatex 2017.11.26)  24 DEC 2017 16:18
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/W32TeX) (preloaded format=pdflatex 2017.11.26)  24 DEC 2017 19:51
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -831,54 +831,54 @@ ata Structures.
 [1
 
 {c:/texlive/2017/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [2]
-Overfull \hbox (12.08832pt too wide) in paragraph at lines 68--69
+Overfull \hbox (12.08832pt too wide) in paragraph at lines 64--65
 []\T2A/cmr/m/n/12 При ре-а-ли-за-ции функ-ции по-ис-ка в ви-де ре-кур-сии по-тр
 е-бу-ет-ся $\OML/cmm/m/it/12 O\OT1/cmr/m/n/12 (\OML/cmm/m/it/12 t [][] n\OT1/cm
 r/m/n/12 )$
  []
 
 [3]
-Overfull \hbox (17.30927pt too wide) in paragraph at lines 90--91
+Overfull \hbox (17.30927pt too wide) in paragraph at lines 86--87
 []\T2A/cmr/m/n/12 При ре-а-ли-за-ции функ-ции встав-ки в ви-де ре-кур-сии по-тр
 е-бу-ет-ся $\OML/cmm/m/it/12 O\OT1/cmr/m/n/12 (\OML/cmm/m/it/12 t [][] n\OT1/cm
 r/m/n/12 )$
  []
 
 [4] [5] [6]
-Overfull \hbox (3.69205pt too wide) in paragraph at lines 122--123
+Overfull \hbox (3.69205pt too wide) in paragraph at lines 118--119
 []\T2A/cmr/m/n/12 Новые ключи-маршрутизаторы ге-не-ри-ру-ют-ся при встав-ке но-
 во-го клю-
  []
 
 [7]
-Overfull \hbox (3.80849pt too wide) in paragraph at lines 136--136
+Overfull \hbox (3.80849pt too wide) in paragraph at lines 132--132
 []\T2A/cmr/bx/n/17.28 Проведение экс-пе-ри-мен-тов и ис-поль-зу-е-мые
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 156--157
+[8]
+Underfull \hbox (badness 10000) in paragraph at lines 152--153
 []\T2A/cmr/m/n/12 Washam J. An Astounding Example of Efficiency with B-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 156--157
+Underfull \hbox (badness 10000) in paragraph at lines 152--153
 \T2A/cmr/m/n/12 Trees [Electronic Source] // Startup Nextdoor. --- URL:
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 156--157
+Underfull \hbox (badness 10000) in paragraph at lines 152--153
 \T2A/cmr/m/n/12 https://startupnextdoor.com/an-astounding-example-of-efficiency
 -with-
  []
 
-[8]
-Underfull \hbox (badness 10000) in paragraph at lines 158--159
+
+Underfull \hbox (badness 10000) in paragraph at lines 154--155
 []\T2A/cmr/m/n/12 Kerttu Pollari-Malmi. $\OML/cmm/m/it/12 B[]$\T2A/cmr/m/n/12 -
 trees [Electronic Source] --- URL:
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 158--159
+Underfull \hbox (badness 10000) in paragraph at lines 154--155
 \T2A/cmr/m/n/12 https://www.cs.helsinki.fi/u/mluukkai/tirak2010/B-tree.pdf [Dat
 e:
  []
@@ -886,16 +886,16 @@ e:
 [9] (./ResearchProposal.aux) )
 (\end occurred inside a group at level 1)
 
-### semi simple group (level 1) entered at line 146 (\begingroup)
+### semi simple group (level 1) entered at line 142 (\begingroup)
 ### bottom level 
 Here is how much of TeX's memory you used:
  4627 strings out of 492985
  59290 string characters out of 6136283
- 128893 words of memory out of 5000000
+ 129893 words of memory out of 5000000
  8043 multiletter control sequences out of 15000+600000
  16562 words of font info for 50 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 41i,6n,25p,2476b,248s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 41i,6n,25p,2481b,248s stack positions out of 5000i,500n,10000p,200000b,80000s
  <c:/Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/lh/lh-t2
 a/labx1200.600pk> <c:/Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/lh/lh-t
 2a/labx1440.600pk> <c:/Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/public
@@ -908,7 +908,7 @@ Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/lh/lh-t2a/larm1200.600pk> <c:
 /Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/lh/lh-t2a/labx1728.600pk> <c
 :/Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/lh/lh-t2a/larm1440.600pk> <
 c:/Users/User/.texlive2017/texmf-var/fonts/pk/ljfour/lh/lh-t2a/larm2074.600pk>
-Output written on ResearchProposal.pdf (9 pages, 116706 bytes).
+Output written on ResearchProposal.pdf (9 pages, 117170 bytes).
 PDF statistics:
  372 PDF objects out of 1000 (max. 8388607)
  70 compressed objects within 1 object stream
