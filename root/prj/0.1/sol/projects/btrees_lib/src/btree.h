@@ -307,14 +307,14 @@ public:
          *
          *  Throws an exception is the current node is fulfilled or the child node is not fulfilled.
          */
-        void splitChild(UShort iChild);
+        virtual void splitChild(UShort iChild);
 
         /** \brief Insert key k into the non-fulfilled node using the ordering.
          *
          *  If node is fulfilled, throws an exception.
          *  If comparator is not defined for the tree, throws an exception.
          */
-        void insertNonFull(const Byte* k);        
+        virtual void insertNonFull(const Byte* k);
 
     protected:
 
@@ -441,7 +441,7 @@ public:
      *  \param currentDepth The depth of the given page in the tree.
      *  \returns The Byte* array with the copy of the key k.
      */
-    Byte* search(const Byte* k, PageWrapper& currentPage, UInt currentDepth);
+    virtual Byte* search(const Byte* k, PageWrapper& currentPage, UInt currentDepth);
 
     /** \brief For the given key \c k finds all its occurrences in the tree and save them in the \c keys.
      *
@@ -457,7 +457,7 @@ public:
      * \param currentDepth The depth of the given page in the tree.
      * \returns The amount of all the occurrences of the key k in the given subtree.
      */
-    int searchAll(const Byte* k, std::list<Byte*>& keys, PageWrapper& currentPage, UInt currentDepth);
+    virtual int searchAll(const Byte* k, std::list<Byte*>& keys, PageWrapper& currentPage, UInt currentDepth);
 
 #ifdef BTREE_WITH_DELETION
 
@@ -544,7 +544,7 @@ protected:
      * \param currentPage The given page.
      * \returns true if the element is removed, false otherwise.
      */
-    bool remove(const Byte* k, PageWrapper& currentPage);
+    virtual bool remove(const Byte* k, PageWrapper& currentPage);
 
     /**
      * \brief Removes all the occurrences of the key k recursively in the given page.
@@ -552,7 +552,7 @@ protected:
      * \param currentPage The given page.
      * \returns The amount of all the occurrences of the key k in the given subtree.
      */
-    int removeAll(const Byte* k, PageWrapper& currentPage);
+    virtual int removeAll(const Byte* k, PageWrapper& currentPage);
 
     /**
      * \brief Removes the key with the given number recursively in the given page.
@@ -560,7 +560,7 @@ protected:
      * \param currentPage The given page.
      * \returns true if the element is removed, false otherwise.
      */
-    bool removeByKeyNum(UShort keyNum, PageWrapper& currentPage);
+    virtual bool removeByKeyNum(UShort keyNum, PageWrapper& currentPage);
 
     /**
      * \brief Prepares subtree for removing in case 3 (when there is not the key k in the current page).
@@ -571,21 +571,22 @@ protected:
      * \param rightNeighbour The instance for the right neighbour of the child.
      * \returns true if the child was merged with the left neighbour, false otherwise.
      */
-    bool prepareSubtree(UShort cursorNum, PageWrapper& currentPage, PageWrapper& child, PageWrapper& leftNeighbour, PageWrapper& rightNeighbour);
+    virtual bool prepareSubtree(UShort cursorNum, PageWrapper& currentPage, PageWrapper& child,
+            PageWrapper& leftNeighbour, PageWrapper& rightNeighbour);
 
     /**
      * \brief Returns the max key in the given subtree and removes it recursively in the subtree.
      * \param pw The root of the subtree.
      * \returns The max key in the given subtree.
      */
-    const Byte* getAndRemoveMaxKey(PageWrapper& pw);
+    virtual const Byte* getAndRemoveMaxKey(PageWrapper& pw);
 
     /**
      * \brief Returns the min key in the given subtree and removes it recursively in the subtree.
      * \param pw The root of the subtree.
      * \returns The min key in the given subtree.
      */
-    const Byte* getAndRemoveMinKey(PageWrapper& pw);
+    virtual const Byte* getAndRemoveMinKey(PageWrapper& pw);
 
     /**
      * \brief Merges the left child and the right child using the given median.
@@ -594,7 +595,8 @@ protected:
      * \param currentPage The parent of the left child and the right child.
      * \param medianNum The given median number in the parent.
      */
-    void mergeChildren(PageWrapper& leftChild, PageWrapper& rightChild, PageWrapper& currentPage, UShort medianNum);
+    virtual void mergeChildren(PageWrapper& leftChild, PageWrapper& rightChild,
+            PageWrapper& currentPage, UShort medianNum);
 
 #endif
 
@@ -776,6 +778,24 @@ class BaseBPlusTree : public BaseBTree {
 
 public:
 
+    class PageWrapper : public BaseBTree::PageWrapper {
+
+    public:
+
+        PageWrapper(BaseBPlusTree* tr);
+
+        ~PageWrapper();
+
+    public:
+
+        virtual void splitChild(UShort iChild) override;
+
+        virtual void insertNonFull(const Byte* k) override;
+
+    };
+
+public:
+
     ~BaseBPlusTree();
 
 protected:
@@ -788,28 +808,52 @@ protected:
 
 public:
 
-    void insert(const Byte* k);
+    virtual Byte* search(const Byte* k, BaseBTree::PageWrapper& currentPage, UInt currentDepth) override;
 
-    Byte* search(const Byte* k);
-
-    Byte* search(const Byte* k, PageWrapper& currentPage, UInt currentDepth);
-
-    int searchAll(const Byte* k, std::list<Byte*>& keys);
-
-    int searchAll(const Byte* k, std::list<Byte*>& keys, PageWrapper& currentPage, UInt currentDepth);
-
+    virtual int searchAll(const Byte* k, std::list<Byte*>& keys,
+            BaseBTree::PageWrapper& currentPage, UInt currentDepth) override;
 
 #ifdef BTREE_WITH_DELETION
 
-    bool remove (const Byte* k);
+    virtual bool remove(const Byte* k, BaseBTree::PageWrapper& currentPage) override;
 
-    int removeAll(const Byte* k);
+    virtual int removeAll(const Byte* k, BaseBTree::PageWrapper& currentPage) override;
+
+    virtual bool removeByKeyNum(UShort keyNum, BaseBTree::PageWrapper& currentPage) override;
+
+    virtual bool prepareSubtree(UShort cursorNum, BaseBTree::PageWrapper& currentPage, BaseBTree::PageWrapper& child,
+            BaseBTree::PageWrapper& leftNeighbour, BaseBTree::PageWrapper& rightNeighbour) override;
+
+    virtual const Byte* getAndRemoveMaxKey(BaseBTree::PageWrapper& pw) override;
+
+    virtual const Byte* getAndRemoveMinKey(BaseBTree::PageWrapper& pw) override;
+
+    virtual void mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& rightChild,
+            BaseBTree::PageWrapper& currentPage, UShort medianNum) override;
 
 #endif
 
 };
 
 class BaseBSTree : public BaseBTree {
+
+public:
+
+    class PageWrapper : public BaseBTree::PageWrapper {
+
+    public:
+
+        PageWrapper(BaseBSTree* tr);
+
+        ~PageWrapper();
+
+    public:
+
+        virtual void splitChild(UShort iChild) override;
+
+        virtual void insertNonFull(const Byte* k) override;
+
+    };
 
 public:
 
@@ -825,22 +869,28 @@ protected:
 
 public:
 
-    void insert(const Byte* k);
+    virtual Byte* search(const Byte* k, BaseBTree::PageWrapper& currentPage, UInt currentDepth) override;
 
-    Byte* search(const Byte* k);
-
-    Byte* search(const Byte* k, PageWrapper& currentPage, UInt currentDepth);
-
-    int searchAll(const Byte* k, std::list<Byte*>& keys);
-
-    int searchAll(const Byte* k, std::list<Byte*>& keys, PageWrapper& currentPage, UInt currentDepth);
-
+    virtual int searchAll(const Byte* k, std::list<Byte*>& keys,
+            BaseBTree::PageWrapper& currentPage, UInt currentDepth) override;
 
 #ifdef BTREE_WITH_DELETION
 
-    bool remove (const Byte* k);
+    virtual bool remove(const Byte* k, BaseBTree::PageWrapper& currentPage) override;
 
-    int removeAll(const Byte* k);
+    virtual int removeAll(const Byte* k, BaseBTree::PageWrapper& currentPage) override;
+
+    virtual bool removeByKeyNum(UShort keyNum, BaseBTree::PageWrapper& currentPage) override;
+
+    virtual bool prepareSubtree(UShort cursorNum, BaseBTree::PageWrapper& currentPage, BaseBTree::PageWrapper& child,
+            BaseBTree::PageWrapper& leftNeighbour, BaseBTree::PageWrapper& rightNeighbour) override;
+
+    virtual const Byte* getAndRemoveMaxKey(BaseBTree::PageWrapper& pw) override;
+
+    virtual const Byte* getAndRemoveMinKey(BaseBTree::PageWrapper& pw) override;
+
+    virtual void mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& rightChild,
+            BaseBTree::PageWrapper& currentPage, UShort medianNum) override;
 
 #endif
 
