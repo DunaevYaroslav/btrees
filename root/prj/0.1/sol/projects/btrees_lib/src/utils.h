@@ -1,24 +1,21 @@
 ﻿////////////////////////////////////////////////////////////////////////////////
 /// \file
-/// \brief     Вспомогательные определения (типов и др.)
-/// \author    Sergey Shershakov
+/// \brief     Utility definitions (types, etc.).
+/// \author    Sergey Shershakov, Anton Rigin
 /// \version   0.1.0
-/// \date      01.05.2017
+/// \date      01.05.2017 -- 04.02.2018
 ///            This is a part of the course "Algorithms and Data Structures" 
 ///            provided by  the School of Software Engineering of the Faculty 
-///            of Computer Science at the Higher School of Economics.
+///            of Computer Science at the Higher School of Economics
+///            and of the course work of Anton Rigin,
+///            the HSE Software Engineering 3-rd year bachelor student.
 ///
 ////////////////////////////////////////////////////////////////////////////////
-
-/**
- * The file is modified by Anton Rigin, group BPI154(2) as a part of adding the disk memory reusing feature.
- */
 
 #ifndef BTREE_UTILS_H_
 #define BTREE_UTILS_H_
 
-
-// чтобы отметить метод нежелательным
+// To mark method as deprecated.
 #ifdef __GNUC__
 #define DEPRECATED __attribute__((deprecated))
 #elif defined(_MSC_VER)
@@ -28,11 +25,10 @@
 #define DEPRECATED
 #endif
 
-
 namespace xi {
 
 //==============================================================================
-// Типы
+// Types
 //==============================================================================
 
 typedef unsigned char Byte;
@@ -45,13 +41,6 @@ typedef unsigned long ULong;
 
 #endif
 
-
-
 } // namespace xi
-
-
-
-
-
 
 #endif // BTREE_UTILS_H_

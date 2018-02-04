@@ -1,19 +1,17 @@
 ﻿/// \file
-/// \brief     Определение классов B-дерева
-/// \author    Sergey Shershakov
+/// \brief     B-tree, B+-tree and B*-tree classes
+/// \authors   Sergey Shershakov, Anton Rigin
 /// \version   0.1.0
-/// \date      01.05.2017
-///            This is a part of the course "Algorithms and Data Structures" 
-///            provided by  the School of Software Engineering of the Faculty 
-///            of Computer Science at the Higher School of Economics.
+/// \date      01.05.2017 -- 04.02.2018
+///            This is a part of the course "Algorithms and Data Structures"
+///            provided by the School of Software Engineering of the Faculty
+///            of Computer Science at the Higher School of Economics
+///            and of the course work of Anton Rigin,
+///            the HSE Software Engineering 3-rd year bachelor student.
 ///
-/// Реализация соответствующих методов располагается в файле btree.cpp.
+/// The implementation of the appropriate methods is in the file btree.cpp.
 ///
 ////////////////////////////////////////////////////////////////////////////////
-
-/**
- * The task is done by Anton Rigin, group BPI154(2) in 2017.
- */
 
 #ifndef BTREE_BTREE_H_
 #define BTREE_BTREE_H_
@@ -30,41 +28,36 @@
 
 #include "utils.h"
 
-
-
 namespace xi {
 
-
-/** \brief Базовое B-дерево.
+/** \brief Base B-tree.
  *
- *  Класс включает базовые компоненты B-дерева, ориентированные на нетипизированную бинарную запись
- *  фиксированного размера (в байтах).
- *  Типизация подразумевается в наследующих классах.
+ *  Class includes B-tree base components, with using binary writing of fixed size (in bytes).
+ *  Typification will be in inheriting classes.
  *
- *  Поле BaseBTree::_order определяет порядок дерева, которое будет содержать в узлах
- *  от <em>(_order - 1)<\em> до <em>(2* _order - 1)<\em> ключей (не считая корня, который
- *  для непустого дерева содержит от 1 ключа).
- *  Поле BaseBTree::_recSize определяет размер (длину) записи ключа в байтах. Запись обрабатывается,
- *  как нетипизированная, то есть массив байт размер \c _recSize. Для типизации необходимо
- *  наследовать этот класс и в производном осуществлять приведение к нужному типу.
+ *  The BaseBTree::_order field defines tree's order, which will contain
+ *  from <em>(_order - 1)<\em> to <em>(2* _order - 1)<\em> keys (excluding root, which
+ *  contains not less than 1 key for non-empty tree).
+ *  The BaseBTree::_recSize field defines size (length) of the key record in bytes. The record is handled,
+ *  as untyped, i.e. as the byte array of the size \c _recSize. For typification it is necessary
+ *  to inherit this class and to implement casting to the right type in the inherited class
  *
- *  Страницы везде нумеруются с 1-цы, а 0 — несуществующая страница (nullptr).
+ *  All pages are numbered from 1, 0 is nonexistent page (nullptr).
  */
 class BaseBTree {
 public:
 
-    //static const char* SIGN; // = "XIBT";
-    //static const Byte SIGN_SIZE = 4;
-
 #pragma pack(push, 1)                           
-    /** \brief Структура заголовка файла. 
+    /** \brief File header structure.
      *
-     *  Явно указываем компилятору, что структура должна быть упакована, т.е. никаких выравниваний
-     *  полей. Этот параметр поддерживается VS и, если верить документации, gcc тоже:
-     *  https://gcc.gnu.org/onlinedocs/gcc/Structure-Layout-Pragmas.html
+     * We explicitly specify the compiler to pack the structure and to not perform any fields alignment.
+     * This param is supported by VS and, according to the reference, gcc, too:
+     * https://gcc.gnu.org/onlinedocs/gcc/Structure-Layout-Pragmas.html
      */
     struct Header {
-        static const UInt VALID_SIGN = 0x54424958;  ///< правильная сигнатура
+
+        /** \brief The valid signature. */
+        static const UInt VALID_SIGN = 0x54424958;
     public:
         Header() : order(0), recSize(0), sign(0) {}
         Header(UShort ord, UShort rs) : 
@@ -72,246 +65,210 @@ public:
         {
         }
     public:
-        /** \brief Проверяет структуру на целостность и возвращает истину, если все ок.*/
+        /** \brief Checks structure for integrity, returns true if it is ok, otherwise returns false. */
         bool checkIntegrity();
     public:
-        UInt sign;  // = 0x54424958;       // сигнатура
+        UInt sign;  // = 0x54424958;
         UShort order;
         UShort recSize;
     }; // struct Header
 #pragma pack(pop)
 
-    /** \brief Смещение структуры заголовка известен уже на этапе компиляции. */
+    /** \brief The header structure offset. */
     static const Byte HEADER_OFS = 0;
 
-    /** \brief Размер структуры заголовка известен уже на этапе компиляции. */
+    /** \brief The header structure size. */
     static const Byte HEADER_SIZE = sizeof(Header);
     
-    /** \brief Смещение для поля записи номера текущей свободной страницы (оно же — число страниц). */
+    /** \brief The current free page number counter (current existing pages counter) offset. */
     static const UInt PAGE_COUNTER_OFS = HEADER_SIZE;
     
-    /** \brief Размер поля записи номера текущей свободной страницы. */
+    /** \brief The current free page number counter (current existing pages counter) size. */
     static const UInt PAGE_COUNTER_SZ = 4;
 
-    /** \brief Размер одного курсора (номера страницы). */
+    /** \brief The cursor (page number) size. */
     static const UInt CURSOR_SZ = 4;
 
-    /** \brief Смещение для поля записи номера корневой страницы. */
+    /** \brief The root page number record offset. */
     static const UInt ROOT_PAGE_NUM_OFS = PAGE_COUNTER_OFS + PAGE_COUNTER_SZ; //HEADER_SIZE;
 
-    /** \brief Размер поля записи номера корневой страницы. */
+    /** \brief The root page number record size. */
     static const UInt ROOT_PAGE_NUM_SZ = CURSOR_SZ; // 4;
 
-    /** \brief Смещение первой реальной страницы. */
+    /** \brief The first real page offset. */
     static const UInt FIRST_PAGE_OFS = ROOT_PAGE_NUM_OFS + ROOT_PAGE_NUM_SZ;//PAGE_COUNTER_OFS + PAGE_COUNTER_SZ;
 
 #ifdef BTREE_WITH_REUSING_FREE_PAGES
 
-    /**
-     * The offset of the free pages counter from the begin of the free pages numbers area.
-     */
+    /** \brief The offset of the free pages counter from the begin of the free pages numbers area. */
     static const UInt FREE_PAGES_COUNTER_OFS = 0;
 
-    /**
-     * The size of the free pages counter.
-     */
+    /** \brief The size of the free pages counter. */
     static const UInt FREE_PAGES_COUNTER_SZ = 4;
 
-    /**
-     * The offset of the first free page number from the begin of the free pages numbers area.
-     */
+    /** \brief The offset of the first free page number from the begin of the free pages numbers area. */
     static const UInt FIRST_FREE_PAGE_NUM_OFS = FREE_PAGES_COUNTER_OFS + FREE_PAGES_COUNTER_SZ;
 
-    /**
-     * The size of the free page number.
-     */
+    /** \brief The size of the free page number. */
     static const UInt FREE_PAGE_NUM_SZ = CURSOR_SZ;
 
 #endif
 
-    /** \brief Смещение поля информации об узле/странице. */
+    /** \brief The node (page) information record offset. */
     static const UInt NODE_INFO_OFS = 0;
 
-    /** \brief Размер поля информации об узле/странице. */
+    /** \brief The node (page) information record size. */
     static const UInt NODE_INFO_SZ = 2;
 
-    /** \brief Смещение области ключей в узле. */
+    /** \brief The keys area in the node (page) record offset. */
     static const UInt KEYS_OFS = NODE_INFO_SZ;
 
-    /** \brief Определяет максимальное возможное число для дерева любого порядка. */
+    /** \brief The max heys number for the tree of any order. */
     static const UShort MAX_KEYS_NUM = 32767;
 
-    /** \brief Маска (поз.) для выделения флага, что нод — листовой. */
+    /** \brief The mask for flag which defines whether node (page) is leaf or not. */
     static const UShort LEAF_NODE_MASK = 0x8000;
 
-    ///** \brief Маска (нег.) для выделения флага, что нод — листовой. */
-    //static const UShort LEAF_NODE_NMASK = ~LEAF_NODE_PMASK;
-
-    //-/** \brief Определяет тип нода для страницы. */
-    //enum NodeType
-    //{
-    //    nRegular,               ///< Обычный внутренний нод, обычное ограничение для числа ключей.
-    //    nRoot,                  ///< Корень. Может содержить меньше ключей.
-    //    nLeaf                   ///< Лист, нулевые курсоры на детей.
-    //};
-
-    /** \brief Структура-обертка над сырым (raw) массивом байт.
+    /** \brief The wrapper above the raw bytes array.
      *
-     *  Предоставляет удобный интерфейс для доступа к индивидуальным значениям страницы/ключа.
+     *  Provides usable interface for access to the values of the page / key.
      */
     class PageWrapper {
+
     public:
+
         PageWrapper(BaseBTree* tr);
 
         ~PageWrapper();
 
-        /** \brief Перераспределяет память под рабочую страницу/узел. */
+        /** \brief Reallocates memory for page. */
         void reallocData(UInt sz);
 
-        /** \brief Обнуляет массив данных. */
+        /** \brief Clears bytes array. */
         void clear();
 
-
-        /** \brief Устанаваливает сразу два поля: число ключей в ноде \c keyNum и признак, что это  
-         *  лист \c isLeaf.
-         *  Проверяет на правильность число ключей. Кидает эксцепцию, если число ключей неправильное.
+        /** \brief Sets two fields: keys in the page number \c keyNum and feature defines whether page is
+         *  the leaf or not \c isLeaf.
+         *  Checks keys number for the correctness. Throws an exception if the keys number is incorrect.
          */
-        //void setKeyNumLeaf(UShort keysNum, NodeType nt);
         void setKeyNumLeaf(UShort keysNum, bool isRoot, bool isLeaf);
 
-        /** \brief Устанаваливает число ключей в ноде \c keyNum.
-         *  Проверяет на правильность число ключей. Кидает эксцепцию, если число ключей неправильное.
+        /** \brief Sets keys in the page number \c keyNum.
+         *  Checks keys number for the correctness. Throws an exception if the keys number is incorrect.
          */
         void setKeyNum(UShort keysNum, bool isRoot);
-        //void setKeyNum(UShort keysNum, NodeType nt);
 
-        /** \brief Перегруженный вариант метода setKeyNum(), самостоятельно опред. тип страницы. */
+        /** \brief Overloaded setKeyNum(), defines page type. */
         void setKeyNum(UShort keysNum)
         {
             setKeyNum(keysNum, isRoot());   // getNodeType());
         }
 
-        /** \brief Возвращает число ключей в ноде. */
+        /** \brief Returns the keys in the page number. */
         UShort getKeysNum() const;
 
-        // /** \brief Определяет и возвращает тип нода/страницы. */
-        //NodeType getNodeType() const;
-
-        /** \brief Устанаваливает флаг, является ли нод узловым. */
+        /** \brief Sets flag which defines whether page is the leaf or not. */
         void setLeaf(bool isLeaf);
 
-
-        /** \brief Возвращает истину, если нод — листовой, ложь иначе. */
+        /** \brief Returns flag which defines whether page is the leaf or not. */
         bool isLeaf() const;
 
-
-        /** \brief Возвращает указатель на массив сырых данных с возможностью записи. */
+        /** \brief Returns pointer to the raw data array. */
         Byte* getData() { return _data;  }
 
-        /** \brief Возвращает константный указатель на массив сырых данных. */
+        /** \brief Returns const pointer to the raw data array. */
         const Byte* getData() const { return _data; }
 
-        /** \brief Возвращает указатель на область памяти, соответствующую ключу номер \c num. 
+        /** \brief Returns pointer to the memory area of key with number \c num.
          *
-         *  Нумерация ключей — с нуля!!
-         *  Если такого ключа нет, возвращает nullptr.
+         *  Keys numbering starts from 0.
+         *  If there is no such a key, returns nullptr.
          */
         Byte* getKey(UShort num);
 
-        /** \brief Копирует значение ключа в адрес \c dst из адреса \c src. 
+        /** \brief Copies key value to the address \c dst from the address \c src.
          *
-         *  Ключи могут принадлежать разным страницам, но размер страницы берется из текущей.
+         *  Keys can belong to different pages, but the page size is taken from the current page.
          */
         inline void copyKey(Byte* dst, const Byte* src);
 
-        /** \brief Копирует значения неск. ключей, начиная с адреса \c dst, из адреса \c src.
-         *  Число ключей определяется параметром \c num.
+        /** \brief Copies several keys' values starting from the address \c dst, from the address \c src.
+         *  Keys number is defined by the \c num.
          *
-         *  Ключи могут принадлежать разным страницам, но размер страницы берется из текущей.
+         *  Keys can belong to different pages, but the page size is taken from the current page.
          */
         inline void copyKeys(Byte* dst, const Byte* src, UShort num);
 
-        /** \brief Копирует набор курсоров принципиально как и в методе copyKeys(). */
+        /** \brief Copies cursors similar to copyKeys(). */
         inline void copyCursors(Byte* dst, const Byte* src, UShort num);
 
-
-
-        /** \brief Перегруженный константный вариант метода getKey(). */
+        /** \brief Overloaded const getKey(). */
         const Byte* getKey(UShort num) const;
 
-        /** \brief Возвращает курсор номер \c cnum. 
+        /** \brief Returns cursor of the number \c cnum.
          *
-         *  Для числа n ключей в ноде, там же будет (n+1) курсоров на дочерние элементы.
-         *  Если \c cnum превышает (n+1) (нумерация с нуля), кидает исключение.
+         *  Throws an exception if the \c cnum exceeds (n+1) (numbering starts from 0)
+         *  where n is for keys in the page number.
          */
         UInt getCursor(UShort cnum);
 
-        /** \brief Возвращает указатель на соотв. курсор \c cnum. Для удобства... */
+        /** \brief Returns pointer to the cursor of the number \c cnum. */
         Byte* getCursorPtr(UShort cnum);
 
-        /** \brief Задает значение \c cval для курсора номер \c cnum. 
+        /** \brief Sets the value \c cval for the cursor of the number \c cnum.
          *
-         *  Если такого курсора нет, кидает исключение.
+         *  If there is not such a cursor, throws an exception.
          */
         void setCursor(UShort cnum, UInt cval);
 
-
-        /** \brief Для заданного номера курсора \c cnum возвращает его смещение в области курсоров.
+        /** \brief Returns the offset (in the cursors area) of the cursor with number \c cnum.
          *
-         *  Если такого курсора не существует, возвращает -1!
+         *  If there is not such a cursor, returns -1.
          */
         int getCursorOfs(UShort cnum) const;
 
-        /** \brief Для заданного номер ключа (записи) \c num возвращает его смещение в области ключей.
+        /** \brief Returns the offset (in the keys area) of the key with number \c num.
          *
-         *  Если такого ключа не существует, возвращает -1!
+         *  If there is not such a key, returns -1.
          */
         int getKeyOfs(UShort num) const;
 
-
-
-        /** \brief Возвращает номер ассоциированной страницы. */
+        /** \brief Returns the page number */
         UInt getPageNum() const { return _pageNum; }
 
-        /** \brief Возвращает истину, если данная страница является корневой. */
+        /** \brief Returns true if the page is root, otherwise returns false. */
         bool isRoot() const { return _tree->getRootPageNum() == getPageNum(); }
-        //bool isRoot() const { return _tree->getRootPage() == this; }
 
-        /** \brief Устанавливает данную страницу в дереве в качестве корневой. 
+        /** \brief Sets the page as the root of the tree.
          *
-         *  Флаг \c writeFlag определяет, нужно ли записать номер корневой страницы сразу в файл.
-         *  Для (writeFlag), если под врапер не распределена страница в файле, будет 
-         *  сформирована исключительная ситуация.
+         *  The \c writeFlag flag defines is it necessary to write the new root page number directly to the file.
+         *  If there is no page in the file for this wrapper and \c writeFlag == true, throws an exception.
          */
         void setAsRoot(bool writeFlag = true);
 
-        /** \brief Возвращает истину, если узел заполнен по максимуму. */
+        /** \brief Returns true if the page is fulfilled, otherwise returns false.  */
         bool isFull() const { return getKeysNum() == _tree->getMaxKeys(); };
 
     public:
-        //----<Прокси методы для работы со страницами и IO>----
 
-        /** \brief Распределяет в файле следующую по очереди страницу и ассоциирует врапер с нем.
+        /** \brief Allocates the next page in the file and associates the wrapper with this page.
          *
-         *  Требования аналогичны методу BaseBTree::allocPage().
+         *  Requirements are similar to BaseBTree::allocPage().
          */
-        //void allocPage(UShort keysNum, NodeType nt)
         void allocPage(UShort keysNum, bool isLeaf)
         {
             _pageNum = _tree->allocPage(*this, keysNum, isLeaf);
-            //_pageNum = _tree->allocPage(keysNum, nt, *this);
         }
 
-        /** \brief Распределяет страницу для нового корня. */
+        /** \brief Allocates the page for the new root. */
         void allocNewRootPage()
         {
             _pageNum = _tree->allocNewRootPage(*this);
         }
 
-
-        /** \brief Читает содержимое страницы номер \c pnum из файла в память текущего врепера.
-        *
-         *  Требования аналогичны методу BaseBTree::readPage();
+        /** \brief Reads page with the number \c pnum from the file to the current wrapper.
+         *
+         *  Requirements are similar to BaseBTree::readPage();
          */
         void readPage(UInt pnum)
         {
@@ -319,25 +276,21 @@ public:
             _pageNum = pnum;
         }
 
-        /** \brief Загружает в текущую страницу дочернюю страницу (номер \c chNum) страницы \c pw. 
+        /** \brief Loads the child page with number \c chNum of the page \c pw to the current wrapper.
          *
-         *  Если номер курсора неправильный, или он не указывает на правильную страницу,
-         *  кидает эксцепцию.
+         *  If the cursor number is incorrects, throws an exception.
          */
         void readPageFromChild(PageWrapper& pw, UShort chNum);
 
-
-        /** \brief Записывает страницу в файл. 
+        /** \brief Writes page into the file.
          *
-         *  Для страницы не задан номер, полетит исключение.
+         *  If the page number is not set, throws an exception.
          */
         void writePage();
 
 #ifdef BTREE_WITH_REUSING_FREE_PAGES
 
-        /**
-         * Marks the page as free (for the following disk memory reusing).
-         */
+        /** \brief Marks the page as free (for the following disk memory reusing). */
         void makePageFree()
         {
             _tree->markPageFree(_pageNum);
@@ -345,224 +298,180 @@ public:
 
 #endif
 
-    public: 
-        //----<Основные части алгоритма работы над b-деревом>----
+    public:
         
-        
-        /** \brief Для не полностью заполненного текущего узла разделяет напополам его 
-         *  полностью заполненного ребенка, определяемого курсором номер \c iChild на два нода/страницы.
-         *  
-         *  Параметр \c iChild представляет индекс курсора, который не может быть 0, что означает
-         *  нарушение целостности (нет страницы с таким ребенком).
-         *  Т.к. в процессе сплита один из ключей ребенка уйдет в этот родительский нод,
-         *  данный нод должен иметь хотя бы один свободный слот под этот ключ. Если это не так,
-         *  полетит исключительная ситуация.
-         *  Для того, чтобы не было неопределенности по поводу индексов, заполненности и проч.
-         *  в соответствующем ребенке, подразумеваем, что он полностью заполнен. Если это не так,
-         *  кидаем искл. ситуацию.
+        /** \brief For the non-fulfilled current node splits its fulfilled child node with number \c iChild
+         *  to the two nodes (pages).
+         *
+         *  \c iChild provides the cursor index which cannot be 0.
+         *
+         *  Throws an exception is the current node is fulfilled or the child node is not fulfilled.
          */
         void splitChild(UShort iChild);
 
-        /** \brief Вставляет в не полностью заполненный узел ключ k с учетом порядка.
+        /** \brief Insert key k into the non-fulfilled node using the ordering.
          *
-         *  Если узел полный, кидает исключение.
-         *  Если для дерева не задан компаратор, кидает исключение.
+         *  If node is fulfilled, throws an exception.
+         *  If comparator is not defined for the tree, throws an exception.
          */
         void insertNonFull(const Byte* k);        
 
-
-        //-/** \brief Используя компаратор, определяет, является ли \c lhv левее (меньше) \c rhv, 
-        // *  и если да, возвращает истину, иначе ложь.
-        // *
-        // *  Если компаратор не задан, кидает исключение.
-        // */
-        //bool lessThan(const Byte* lhv, const Byte* rhv);
-
-
-        //Byte*& getData() { return _pageData;  }
-
     protected:
+
+        /**
+         * \brief Inner child splitting method. It is necessary for reducing the number of the disk operations.
+         *
+         * \param iChild The number of child.
+         * \param leftChild The left child wrapper.
+         * \param rightChild The right child wrapper.
+         */
         void splitChild(UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild);
 
     protected:
-        PageWrapper(const PageWrapper&);                        ///< КК не доступен.
-        PageWrapper& operator= (PageWrapper&);                  ///< Оператор присваивания недоступен.
+
+        PageWrapper(const PageWrapper&);
+
+        PageWrapper& operator= (PageWrapper&);
 
     protected:
-        Byte* _data;                                            ///< Сырой массив данных.
-        BaseBTree* _tree;                                       ///< Указатель на само дерево, нужно оно.
 
-        /** \brief Номер страницы в файле, ассоциированный с текущим (в)репером. 
-         *
-         *  Необходим для осуществления логической привязки обертки к реальной странице 
-         *  диске. Привязка осуществляется при вычитке страницы или распределения новой.
-         *  Значение 0 означает, что страница не привязана, что не позволит выполнить 
-         *  операции чтения/записи на диск.
-         */
+        /** \brief The raw data array. */
+        Byte* _data;
+
+        /** \brief The pointer to the tree. */
+        BaseBTree* _tree;
+
+        /** \brief Number of page in the file associated with the current wrapper. */
         UInt _pageNum;
 
     }; // class PageWrapper
 
     friend class PageWrapper;
 
-    /** \brief Интерфейс, определяющий операцию сравнения двух ключей дерева.
-     *
-     *  Конкретная реализация зависит от типов ключей и подразумевает явное
-     *  приведение нетипизированного потока байт ключа к нужному значению.
-     */
+    /** \brief Interface defining the two tree's keys comparing operation. */
     class IComparator {
     public:
         
-        /** \brief Выполняет сравнение двух ключей: левого \c lhv и правого \c rhv.
+        /** \brief Compares two keys: the left \c lhv and the right \c rhv.
          *
-         *  (Максимальный) размер ключей определяется параметром \c sz.
+         *  (Max) keys size is defined by \c sz.
          *
-         *  \returns истину, если <tt>lhv < rhv<\tt>; иначе ложь.
+         *  \returns true <tt>lhv < rhv<\tt>; otherwise false.
          *
-         *  Если по какой-то причине ключи не могут быть сравнены (красное с квадратным),
-         *  генерируется исключительная ситуация std::invalid_argument.
+         *  If keys cannot be compared because of some reason, throws std::invalid_argument.
          */
         virtual bool compare(const Byte* lhv, const Byte* rhv, UInt sz) = 0;
 
-        /** \brief Сравнивает два ключа и если они считаются эквивалентными, возвращает истину, 
-          * иначе ложь.
+        /** \brief Compares two keys.
           *
-          * Если два ключа являются эквивалентными, это не обязательно значит, что подлежащие
-          * под ними массивы побайтно равны.
+          * (Max) keys size is defined by \c sz.
+          *
+          * \returns true if two keys are equal; otherwise false.
           */
         virtual bool isEqual(const Byte* lhv, const Byte* rhv, UInt sz) = 0;
+
     protected:
+
         ~IComparator() {};
 
     }; // class IComparator
 
-
-     
 public:
-    /** \brief Деструктор. */
+
+    /** \brief Destructor. */
     ~BaseBTree();
+
 protected:
-    /** \brief Конструирует новое B-дерево со структурой, определяемой переданными параметрами.
+
+    /** \brief Constructs new B-tree using received params.
      *
-     *  Создает новое дерево и записывает его в поток \c stream. Если файл существует, 
-     *  он перезаписывается. Если файл не может быть открыт, генерируется исключительная ситуация.
-     *  Параметр \c order определяет порядок дерева, параметр \c recSize определяет 
-     *  размер (длину) записи ключа в байтах.
+     *  Constructs new tree and writes it into \c stream. If file exists,
+     *  it will be overwritten. If file cannot be open, throws an exception.
+     *  \c order defines tree's order, \c recSize defines
+     *  key's size (length) in bytes.
      */
     BaseBTree(UShort order, UShort recSize, IComparator* comparator, std::iostream* stream);
 
-    /** \brief Конструирует заготовку под B-дерево, параметры которого будут прочитаны из
-     *  существующего деревофайла.
-     */
+    /** \brief Constructs blank tree, params of this tree will be read from existing tree's file. */
     BaseBTree(IComparator* comparator, std::iostream* stream);
 
-    BaseBTree(const BaseBTree&);                        ///< КК не доступен.
-    BaseBTree& operator= (BaseBTree&);                  ///< Оператор присваивания недоступен.
+    BaseBTree(const BaseBTree&);
+
+    BaseBTree& operator= (BaseBTree&);
 
 public:
 
-    /** \brief Возвращает истину, если дерево открыто, ложь иначе. 
-     *
-     *  Базовый класс всегда будет говорить, что он не готов, чтобы избавиться
-     *  в этом месте от ч.в. функции, которая при инициализации рабочих страниц
-     *  в конструкторе класса (которые смотрят на его готовность) приводят к 
-     *  pure virtual function called проблеме
-     */
+    /** \brief Returns true if tree is opened, otherwise returns false. */
     virtual bool isOpen() const { return false; } // = 0;
 
-
-    /** \brief Читает содержимое страницы номер \c pnum из файла в память в \c dst.
+    /** \brief Reads page with number \c pnum from the file to the memory in \c dst.
      *
-     *  Методы вычитывает страницу побайтно, размер определяется getNodePageSize(). Вызывающий
-     *  метод сам отстветсвеннен за распределение в необходимом объем и последующее 
-     *  освобождение памяти.
-     *  Если поток не открыт или такой страницы не существует, а именно — \c pnum >= getCurPage(), —
-     *  генерируется исключительная ситуация.
-     *
-     *  Нумерация страниц с 1-цы.
+     *  If there is no such a page, throws an exception.
      */
     void readPage(UInt pnum, Byte* dst);
 
-    ///** \brief Читает страницу в рабочую обертку. Остальное аналогично readPage(). */
-    //DEPRECATED void readWorkPage(UInt pnum);
-
-
-    /** \brief Записывает в файл страницу номер \c pnum из памяти \c dst.
+    /** \brief Writes to the file page with number \c pnum from the memory in \c dst.
      *
-     *  Требования к номеру страницы с товарищами такие же, как и у readPage().
+     *  If there is no such a page, throws an exception.
      */
     void writePage(UInt pnum, const Byte* dst);
 
-
-    ///** \brief Записывает рабочую страницу. Остальное аналогично writePage(). */
-    //DEPRECATED void writeWorkPage(UInt pnum);
-
-
-
-    /** \brief Распределяет в файле следующую по очереди страницу и возвращает ее номер. 
+    /** \brief Allocates the next page in the file and returns its number.
      *
      *
-     *  Параметр \c keyNum определяет число ключей в ноде, а \c nt — тип нода, определяющий
-     *  возможное число хранимых ключей и курсоры.
-     *  Если поток не готов, генерирует исключительную ситуацию.
+     *  \c keyNum defines the node's keys number, isLeaf defines whether new node should be leaf or not.
+     *  If the stream is not ready, throws an exception.
      */
-    //UInt allocPage(UShort keysNum, NodeType nt, PageWrapper& pw);
     UInt allocPage(PageWrapper& pw, UShort keysNum, bool isLeaf = false);
 
-    /** \brief Распределяет страницу для нового корня. */
+    /** \brief Allocates the page for the new tree's root. */
     UInt allocNewRootPage(PageWrapper& pw);
 
-    /** \brief Вставляет в дерево ключ k с учетом порядка.
-     *
-     */
-
+    /** \brief Inserts the key k into the tree using the ordering. */
     void insert(const Byte* k);
     
-    /** \brief Для заданного ключа \c k ищет первое его вхождение в дерево по принципу эквивалентности. 
-     *  Если ключ найден, возвращает указатель на подлежащий массив, иначе nullptr.
+    /** \brief For the given key \c k finds the first its occurrence in the tree.
+     *  If the key is found, returns the pointer to the appropriate bytes array, otherwise returns nullptr.
      */
     Byte* search(const Byte* k);
 
-    /**
-     * Searches the first occurrence of the key k recursively in the given page.
-     * @param k The key for searching.
-     * @param currentPage The given page.
-     * @param currentDepth The depth of the given page in the tree.
-     * @return The Byte* array with the copy of the key k.
+    /** \brief Searches the first occurrence of the key k recursively in the given page.
+     *  \param k The key for searching.
+     *  \param currentPage The given page.
+     *  \param currentDepth The depth of the given page in the tree.
+     *  \returns The Byte* array with the copy of the key k.
      */
     Byte* search(const Byte* k, PageWrapper& currentPage, UInt currentDepth);
 
-    /** \brief Для заданного ключа \c k ищет все его его вхождения в дерево по принципу эквивалентности.
-     *  Каждый найденный ключ добавляется в переданный список ключей \c keys.
+    /** \brief For the given key \c k finds all its occurrences in the tree and save them in the \c keys.
      *
-     *  \returns число найденных элементов
+     *  \returns The found elements count.
      */
     int searchAll(const Byte* k, std::list<Byte*>& keys);
 
     /**
-     * Searches all the occurrences of the key k recursively in the given page.
-     * @param k The key for searching.
-     * @param keys The list for saving the Byte* arrays with the copies of the key k.
-     * @param currentPage The given page.
-     * @param currentDepth The depth of the given page in the tree.
-     * @return The amount of all the occurrences of the key k in the given subtree.
+     * \brief Searches all the occurrences of the key k recursively in the given page.
+     * \param k The key for searching.
+     * \param keys The list for saving the Byte* arrays with the copies of the key k.
+     * \param currentPage The given page.
+     * \param currentDepth The depth of the given page in the tree.
+     * \returns The amount of all the occurrences of the key k in the given subtree.
      */
     int searchAll(const Byte* k, std::list<Byte*>& keys, PageWrapper& currentPage, UInt currentDepth);
 
-
 #ifdef BTREE_WITH_DELETION
 
-    /** \brief Для заданного ключа \c k находит первое вхождение его в дерево по принципу эквивалентности 
-     *  и удаляет его из дерева.
+    /** \brief For the given key \c k finds the first its occurrence in the tree
+     *  and removes it from the tree.
      *
-     *  \returns истину, если удален, ложь иначе.
+     *  \returns true if the key is removed, otherwise false.
      */    
     bool remove (const Byte* k);
 
-    /** \brief Для заданного ключа \c k находит все вхождения его в дерево по принципу эквивалентности
-     *  и удаляет их.
+    /** \brief For the given key \c k finds all its occurrences in the tree
+     *  and removes them from the tree.
      *
-     *  \returns Число удаленных узлов.
+     *  \returns The removed nodes count.
      */
     int removeAll(const Byte* k);
 
@@ -571,9 +480,9 @@ public:
 #ifdef BTREE_WITH_REUSING_FREE_PAGES
 
     /**
-     * Marks the page with the given number as free (for the following disk memory reusing).
-     * @param pageNum The given page number.
-     * @throws std::invalid_argument if the given page number more than the last created page number.
+     * \brief Marks the page with the given number as free (for the following disk memory reusing).
+     * \param pageNum The given page number.
+     * \throws std::invalid_argument if the given page number more than the last created page number.
      */
     void markPageFree(UInt pageNum);
 
@@ -581,386 +490,285 @@ public:
 
 public:
 
-    // сеттеры/геттеры
-
-    /** \brief Возвращает порядок (order) \c b B-дерева. */
+    /** \brief Returns the tree's order. */
     UShort getOrder() const { return _order; }
 
-    /** \brief Возвращает максимальное число ключей в ноде. Определяется порядком дерева: <em>(2* _order - 1)<\em>. */
+    /** \brief Returns the max keys number in the node. Defined by the tree's order: <em>(2* _order - 1)<\em>. */
     UInt getMaxKeys() const { return _maxKeys; }
 
-    /** \brief Возвращает минимальное число ключей в ноде. Определяется порядком дерева: <em>(_order - 1)<\em>. */
+    /** \brief Returns the min keys number in the node. Defined by the tree's order: <em>(_order - 1)<\em>. */
     UInt getMinKeys() const { return _minKeys; }
 
-    /** \brief Возвращает размер области под ключи, как максимальное число ключей в ноде на их размер.
-     *  Поле требуется рассчитывать для определения смещения области указателей.
-     */
+    /** \brief Returns the keys area size defined as the max keys number multiplied by the key size. */
     UInt getKeysSize() const { return _keysSize; }
 
-    /** \brief Возвращает смещение области курсоров на дочерние элементы, как конец области ключей. */
+    /** \brief Returns the child nodes cursors area offset defined ad the keys area's end. */
     UInt getCursorsOfs() const { return _cursorsOfs; }
 
-
-    /** \brief Возвращает размер всего узла, он же определяет размер страницы. */
+    /** \brief Returns the node (page) size. */
     UInt getNodePageSize() const { return _nodePageSize; }
 
-    /** \brief Возвращает длину записи ключа. */
+    /** \brief Returns the key record size (length). */
     UShort getRecSize() const { return _recSize; }
 
-    /** \brief Возвращает номер последней записанной страницы и оно же — число записанных страниц. 
-     *
-     *  Страницы нумеруются с 1-цы (реальные), число 0 означает специальный случай — нулевой курсор,
-     *  т.е. не указывает на страницу, а значит ни одной страницы не записано.
-     */
+    /** \brief Returns the last written page number (the written pages count). */
     UInt getLastPageNum() const { return _lastPageNum; }
 
-
-    /** \brief Возвращает ненулевой номер страницы корня дерева или 0, если в д. нет ни одного узла. */
+    /** \brief Returns the unzero number of the tree's root page or 0 if there are no pages in the tree. */
     UInt getRootPageNum() const { return _rootPageNum;  }
 
     /**
-     * Returns max depth reached during searching process.
-     * @return Max depth reached during searching process.
+     * \brief Returns max depth reached during searching process.
      */
     UInt getMaxSearchDepth() const { return _maxSearchDepth; }
 
-
-    //--- страницы в оперативной памяти
-     /** \brief Возвращает ссылку на текущую корневую страницу. */
+     /** \brief Returns the reference to the current root page. */
     PageWrapper& getRootPage() { return _rootPage; }
 
-     /** \brief Константный вариант метода getRootPage(). */
+     /** \brief The overloaded const getRootPage(). */
     const PageWrapper& getRootPage() const { return _rootPage; }
 
-    //-/** \brief Возвращает указатель на текущую корневую страницу. */
-    //PageWrapper* getRootPage() { return _rootPage; }
-
-    ///** \brief Возвращает константный указатель на текущую корневую страницу. */
-    //const PageWrapper* getRootPage() const { return _rootPage; }
-
-
-    ///** \brief Возвращает ссылку на текущую рабочую страницу. */
-    //PageWrapper& getWorkPage() { return _workPage; }
-
-    ///** \brief Константный вариант метода getWorkPage(). */
-    //const PageWrapper& getWorkPage() const { return _workPage; }
-
-
-    //PageWrapper& getWP0() { return _wp0; }  ///< DONE:
-    //PageWrapper& getWP1() { return _wp1; }  ///< DONE:
-    //PageWrapper& getWP2() { return _wp2; }  ///< DONE:
-
-    /** \brief Задает компаратор для дерева. */
+    /** \brief Sets the tree's comparator */
     void setComparator(IComparator* c) { _comparator = c; }
 
-    /** \brief Возвращает компаратор. */
+    /** \brief Returns the tree's comparator. */
     IComparator* getComparator() const { return _comparator; }
-
 
 protected:
 
 #ifdef BTREE_WITH_DELETION
 
     /**
-     * Removes the first occurrence of the key k recursively in the given page.
-     * @param k The key for removing.
-     * @param currentPage The given page.
-     * @return true if the element is removed, false otherwise.
+     * \brief Removes the first occurrence of the key k recursively in the given page.
+     * \param k The key for removing.
+     * \param currentPage The given page.
+     * \returns true if the element is removed, false otherwise.
      */
     bool remove(const Byte* k, PageWrapper& currentPage);
 
     /**
-     * Removes all the occurrences of the key k recursively in the given page.
-     * @param k The key for removing.
-     * @param currentPage The given page.
-     * @return The amount of all the occurrences of the key k in the given subtree.
+     * \brief Removes all the occurrences of the key k recursively in the given page.
+     * \param k The key for removing.
+     * \param currentPage The given page.
+     * \returns The amount of all the occurrences of the key k in the given subtree.
      */
     int removeAll(const Byte* k, PageWrapper& currentPage);
 
     /**
-     * Removes the key with the given number recursively in the given page.
-     * @param keyNum The given key number.
-     * @param currentPage The given page.
-     * @return true if the element is removed, false otherwise.
+     * \brief Removes the key with the given number recursively in the given page.
+     * \param keyNum The given key number.
+     * \param currentPage The given page.
+     * \returns true if the element is removed, false otherwise.
      */
     bool removeByKeyNum(UShort keyNum, PageWrapper& currentPage);
 
     /**
-     * Prepares subtree for removing in case 3 (when there is not the key k in the current page).
-     * @param cursorNum The number of cursor to the subtree which potentially contains the key k.
-     * @param currentPage The current page
-     * @param child The child whose subtree potentially contains the key k.
-     * @param leftNeighbour The instance for the left neighbour of the child.
-     * @param rightNeighbour The instance for the right neighbour of the child.
-     * @return true if the child was merged with the left neighbour, false otherwise.
+     * \brief Prepares subtree for removing in case 3 (when there is not the key k in the current page).
+     * \param cursorNum The number of cursor to the subtree which potentially contains the key k.
+     * \param currentPage The current page
+     * \param child The child whose subtree potentially contains the key k.
+     * \param leftNeighbour The instance for the left neighbour of the child.
+     * \param rightNeighbour The instance for the right neighbour of the child.
+     * \returns true if the child was merged with the left neighbour, false otherwise.
      */
     bool prepareSubtree(UShort cursorNum, PageWrapper& currentPage, PageWrapper& child, PageWrapper& leftNeighbour, PageWrapper& rightNeighbour);
 
     /**
-     * Returns the max key in the given subtree and removes it recursively in the subtree.
-     * @param pw The root of the subtree.
-     * @return The max key in the given subtree.
+     * \brief Returns the max key in the given subtree and removes it recursively in the subtree.
+     * \param pw The root of the subtree.
+     * \returns The max key in the given subtree.
      */
     const Byte* getAndRemoveMaxKey(PageWrapper& pw);
 
     /**
-     * Returns the min key in the given subtree and removes it recursively in the subtree.
-     * @param pw The root of the subtree.
-     * @return The min key in the given subtree.
+     * \brief Returns the min key in the given subtree and removes it recursively in the subtree.
+     * \param pw The root of the subtree.
+     * \returns The min key in the given subtree.
      */
     const Byte* getAndRemoveMinKey(PageWrapper& pw);
 
     /**
-     * Merges the left child and the right child using the given median.
-     * @param leftChild The left child.
-     * @param rightChild The right child
-     * @param currentPage The parent of the left child and the right child.
-     * @param medianNum The given median number in the parent.
+     * \brief Merges the left child and the right child using the given median.
+     * \param leftChild The left child.
+     * \param rightChild The right child
+     * \param currentPage The parent of the left child and the right child.
+     * \param medianNum The given median number in the parent.
      */
     void mergeChildren(PageWrapper& leftChild, PageWrapper& rightChild, PageWrapper& currentPage, UShort medianNum);
 
 #endif
 
-
-    /** \brief Загружает дерево из потока.
-     *
-     *  Включая корневую страницу.
-     */
+    /** \brief Loads the tree and its root page from the stream. */
     void loadTree();
 
-    /** \brief Загружает корневую страницу в одну из рабочих страниц, переданных параметром \c pw. 
-     *
-     *  Если файле информации о корневой странице не значится, кидает исключение.
-     */
-    void loadRootPage();    // PageWrapper& pw);
+    /** \brief Loads the tree's root page. */
+    void loadRootPage();
 
-    /** \brief Создает дерево и записывает его в поток.
-     *
-     *  Создает дерево с нуля, создает страницу под корень и записывает их в поток.
-     */
+    /** \brief Creates the tree and its root page and writes them to the stream. */
     void createTree(UShort order, UShort recSize);
 
-    /** \brief Создает и записывает корневую страницу при создании дерева с нуля. */
+    /** \brief Creates and writes the tree's root page and writes it to the stream. */
     void createRootPage();
 
-    /** \brief Метод проверяет, открыт ли поток (готово ли дерево), если нет, кидает исключение. */
+    /** \brief Checks whether the stream is opened (the tree is ready) or not, If not, throws an exception. */
     void checkForOpenStream();
 
-    /** \brief Для заданного порядка и переданного числа ключей определяет, соответствует ли оно
-     *  ограничениям на число ключей в ноде для данного порядка, или нет.
+    /** \brief Checks whether the node's keys number matches the tree order or not.
      *  
-     *  \c keysNum — запрашиваемое число ключей.
-     *  \с isRoot — признак, что это корень. Если истина, минимальное число ключей 
-     *  может быть 1 (0?), в отличие от всех других нод.
-     *  \returns true, если соответствует.
+     *  \c keysNum The node's keys number.
+     *  \c isRoot Defines whether the node is root or not.
+     *  \returns true if the node's keys number matches the tree order, otherwise false.
      */
-    //bool checkKeysNumber(UShort keysNum, NodeType nt); // bool isRoot);
     bool checkKeysNumber(UShort keysNum, bool isRoot);
 
-
-    /** \brief Вариант метода checkKeysNumber(), кидающий исключение для неправильного числа ключей. */
+    /** \brief The overloaded checkKeysNumber().
+     *  \throws an exception if the node's keys number does not match the tree order
+     */
     void checkKeysNumberExc(UShort keysNum, bool isRoot);
-    //void checkKeysNumberExc(UShort keysNum, NodeType nt); // bool isRoot);
 
-
-    /** \brief Записывает в поток (в текущую позицию!) заголовок дерева. */
+    /** \brief Writes the tree's header into the stream. */
     void writeHeader();
 
-    /** \brief Читает из потока заголовок дерева. */
+    /** \brief Read the tree's header from the stream. */
     void readHeader(Header& hdr);
 
-
-    // /** \brief Записывает в потоктекущее значение числа страниц (последняя записанная). */
-    //void writePageCounter() { writePageCounter(_lastPageNum); }
-
-
-    /** \brief Записывает в поток поле \c pc, обозначающее число страниц (последняя записанная). */
+    /** \brief Writes the written pages count into the stream. */
     void writePageCounter(); // UInt pc);
 
-    /** \brief Читает из потока поле \c pc, обозначающее число страниц (последняя записанная), в поле. */
-    //UInt 
+    /** \brief Reads the written pages count from the stream. */
     void readPageCounter();
 
+    /** \brief Writes the tree's root page number into the stream. */
+    void writeRootPageNum();
 
-    /** \brief Осуществляет запись номера страницы/нода, соответствующего корню дерева. */
-    void writeRootPageNum(); // UInt rpn);
-
-    // /** \brief Запись текущего номера корневой страницы. */
-    //void writeRootPageNum() { writeRootPageNum(_rootPageNum); }
-
-    /** \brief Читает из потока номер страницы/нода, соответствующего корню дерева, в поле. */
-    //UInt 
+    /** \brief Reads the tree's root page number from the stream. */
     void readRootPageNum();
 
-    /** \brief Устаналивает значение номера корневой страницы. 
+    /** \brief Sets the root page number.
      *
-     *  Если флаг \c writeFlag == true, тут же записывает этот номер в файл.
+     *  If \c writeFlag == true, writes this number into the file immediately.
      */
     void setRootPageNum(UInt pnum, bool writeFlag = true);
 
-    /** \brief Задает порядок дерва и пересчитывает связанные значения. */
+    /** \brief Sets the tree's order and recalculates the associated values. */
     void setOrder(UShort order, UShort recSize);
 
-    /** \brief Перераспределяе память для/под рабочие страницы. */
+    /** \brief Reallocates the memory for the working pages. */
     void reallocWorkPages();
 
-
-    /** \brief Закрытая и основная часть метода readPage(). */
+    /** \brief The inner part of the readPage(). */
     void readPageInternal(UInt pnum, Byte* dst);
 
-    /** \brief Закрытая и основная часть метода writePage(). */
+    /** \brief The inner part of the writePage(). */
     void writePageInternal(UInt pnum, const Byte* dst);
 
-    /** \brief Позиционируется на смещение в файле, соответствующее номеру страницы \c pnum. */
+    /** \brief Goes to the offset in the file matching to the page with number \c pnum. */
     void gotoPage(UInt pnum);
 
 #ifdef BTREE_WITH_REUSING_FREE_PAGES
 
     /**
-     * Allocate page using the free pages reusing concept.
-     * @param pw PageWrapper for getting access to the allocated page.
-     * @param keysNum The number of the keys in the allocated page.
-     * @param isRoot Shows whether the allocated page is the root of the tree or not.
-     * @param isLeaf Shows whether the allocated page is the leaf of the tree or not.
-     * @return The number of the allocated page.
+     * \brief Allocate page using the free pages reusing concept.
+     * \param pw PageWrapper for getting access to the allocated page.
+     * \param keysNum The number of the keys in the allocated page.
+     * \param isRoot Shows whether the allocated page is the root of the tree or not.
+     * \param isLeaf Shows whether the allocated page is the leaf of the tree or not.
+     * \returns The number of the allocated page.
      */
     UInt allocPageUsingFreePages(PageWrapper& pw, UShort keysNum, bool isRoot, bool isLeaf);
 
-    /**
-     * Loads the free pages counter from the disk.
-     */
+    /** \brief Loads the free pages counter from the disk. */
     void loadFreePagesCounter();
 
-    /**
-     * Writes the free pages counter to the disk.
-     */
+    /** \brief Writes the free pages counter to the disk. */
     void writeFreePagesCounter();
 
-    /**
-     * Gets the last free page number from the disk.
-     * @return The last free page number.
+    /** \brief Gets the last free page number from the disk.
+     *  \returns The last free page number.
      */
     UInt getLastFreePageNum();
 
     /**
-     * The internal part of the allocPageUsingFreePages() method.
-     * @param pw PageWrapper for getting access to the allocated page.
-     * @param keysNum The number of the keys in the allocated page.
-     * @param isRoot Shows whether the allocated page is the root of the tree or not.
-     * @param isLeaf Shows whether the allocated page is the leaf of the tree or not.
-     * @param freePageNum The free page number for reusing.
+     * \brief The internal part of the allocPageUsingFreePages() method.
+     * \param pw PageWrapper for getting access to the allocated page.
+     * \param keysNum The number of the keys in the allocated page.
+     * \param isRoot Shows whether the allocated page is the root of the tree or not.
+     * \param isLeaf Shows whether the allocated page is the leaf of the tree or not.
+     * \param freePageNum The free page number for reusing.
      */
     void allocPageUsingFreePagesInternal(PageWrapper& pw, UShort keysNum, bool isRoot, bool isLeaf, UInt freePageNum);
 
     /**
-     * Gets the page offset from the begin of the file.
-     * @param pageNum The page number for getting the offset.
-     * @return The page offset from the begin of the file.
+     * \brief Gets the page offset from the begin of the file.
+     * \param pageNum The page number for getting the offset.
+     * \returns The page offset from the begin of the file.
      */
     ULong getPageOfs(UInt pageNum);
 
-    /**
-     * Returns the offset of the free pages numbers area from the begin of the file.
-     * @return The offset of the free pages numbers area from the begin of the file.
-     */
+    /** \brief Returns the offset of the free pages numbers area from the begin of the file. */
     ULong getFreePagesInfoAreaOfs();
 
-    /**
-     * Returns the offset of the last free page number from the begin of the file.
-     * @return The offset of the last free page number from the begin of the file.
-     */
+    /** \brief Returns the offset of the last free page number from the begin of the file. */
     ULong getLastFreePageNumOfs();
 
 #endif
 
-    /** \brief Закрытая и основная часть метода allocPage(). */
+    /** \brief The internal part of the allocPage(). */
     UInt allocPageInternal(PageWrapper& pw, UShort keysNum, bool isRoot, bool isLeaf);
-    //UInt allocPageInternal(UShort keysNum, NodeType nt, PageWrapper& pw); // bool isLeaf);
 
-    /** \brief Выполняет "сброс" параметров дерева.
-     *
-     *  Реализуется для дочерних классов, которые могут "переоткрывать" дерево.
-     */
+    /** \brief Resets the tree's params. */
     void resetBTree();
-
-    
 
 protected:
 
-    /** \brief Определяет порядок (order) \c b B-дерева. */
+    /** \brief Defines the tree's order. */
     UShort _order;
 
-    /** \brief Максимальное число ключей в ноде. Определяется порядком дерева: <em>(2* _order - 1)<\em>. */
+    /** \brief The max keys number in the node. Defined by the tree's order: <em>(2* _order - 1)<\em>. */
     UInt _maxKeys;
 
-    /** \brief Минимальное число ключей в ноде. Определяется порядком дерева: <em>(_order - 1)<\em>. */
+    /** \brief The min keys number in the node. Defined by the tree's order: <em>(_order - 1)<\em>. */
     UInt _minKeys;
 
-    /** \brief Определяет размер области под ключи, как максимальное число ключей в ноде на их размер. 
-     *  Поле требуется рассчитывать для определения смещения области указателей.
-     */
+    /** \brief the keys area size defined as the max keys number multiplied by the key size. */
     UInt _keysSize;
     
-    /** \brief Определяет смещение области курсоров на дочерние элементы, как конец области ключей. */
+    /** \brief The child nodes cursors area offset defined ad the keys area's end. */
     UInt _cursorsOfs;
 
-
-    /** \brief Размер всего узла, он же определяет размер страницы. */
+    /** \brief The node (page) size. */
     UInt _nodePageSize;
-    
-    
-    /** \brief Определяет длину записи ключа. */
+
+    /** \brief The key record size (length). */
     UShort _recSize;
 
-    /** \brief Номер текущей свободной страницы и оно же — число записанных страниц + 1. */
+    /** \brief The last written page number (the written pages count). */
     UInt _lastPageNum;
 
-    /** \brief Хранит номер текущей страницы с корневым элементом дерева. */
+    /** \brief The unzero number of the tree's root page or 0 if there are no pages in the tree. */
     UInt _rootPageNum;
 
+    /** \brief The max reached tree's depth during the last search. */
     UInt _maxSearchDepth;
 
-
-    // /** \brief Минимальное число элементов — определяется порядком (order - 1) */
-    //UWord _minKeyNum;
-
-    /** \brief Поток, ассоциированный с объектом, куда дерево пишется и откуда читается. */
+    /** \brief The stream into / from which the tree is written / read. */
     std::iostream* _stream;
 
-
-    /** \brief Обертка над корневой страницей, которая всегда в памяти хранится. */
+    /** \brief The root page wrapper. Always stored in the memory. */
     PageWrapper _rootPage;
 
-    ///** \brief Указатель на корневую страницу, если существует. 
-    // *
-    // *  Для nullptr — нет корневой страницы, дерево не инициализировано или пусто.
-    // */
-    //PageWrapper* _rootPage;
-
-    ///** \brief Обертка над текущей рабочей страницей, предоставляющая интерфейс для удобного доступа. */
-    //PageWrapper _workPage;
-
-
-    //PageWrapper _wp0;               ///< TODO: рабочая страница 0
-    //PageWrapper _wp1;               ///< TODO: рабочая страница 1
-    //PageWrapper _wp2;               ///< TODO: рабочая страница 2
-
-
-
-
-    /** \brief Компаратор для сравнения ключей. */
+    /** \brief Comparator for the keys comparing. */
     IComparator* _comparator;
 
 #ifdef BTREE_WITH_REUSING_FREE_PAGES
 
-    /**
-     * The free pages counter.
-     * Contains the count of the free pages for reusing.
+    /** \brief The free pages counter.
+     *
+     *  Contains the count of the free pages for reusing.
      */
     UInt _freePagesCounter;
 
 #endif
-
 
 }; // class BaseBTree
 
@@ -980,57 +788,21 @@ protected:
 
 public:
 
-    /** \brief Вставляет в дерево ключ k с учетом порядка.
-     *
-     */
     void insert(const Byte* k);
 
-    /** \brief Для заданного ключа \c k ищет первое его вхождение в дерево по принципу эквивалентности.
-     *  Если ключ найден, возвращает указатель на подлежащий массив, иначе nullptr.
-     */
     Byte* search(const Byte* k);
 
-    /**
-     * Searches the first occurrence of the key k recursively in the given page.
-     * @param k The key for searching.
-     * @param currentPage The given page.
-     * @param currentDepth The depth of the given page in the tree.
-     * @return The Byte* array with the copy of the key k.
-     */
     Byte* search(const Byte* k, PageWrapper& currentPage, UInt currentDepth);
 
-    /** \brief Для заданного ключа \c k ищет все его его вхождения в дерево по принципу эквивалентности.
-     *  Каждый найденный ключ добавляется в переданный список ключей \c keys.
-     *
-     *  \returns число найденных элементов
-     */
     int searchAll(const Byte* k, std::list<Byte*>& keys);
 
-    /**
-     * Searches all the occurrences of the key k recursively in the given page.
-     * @param k The key for searching.
-     * @param keys The list for saving the Byte* arrays with the copies of the key k.
-     * @param currentPage The given page.
-     * @param currentDepth The depth of the given page in the tree.
-     * @return The amount of all the occurrences of the key k in the given subtree.
-     */
     int searchAll(const Byte* k, std::list<Byte*>& keys, PageWrapper& currentPage, UInt currentDepth);
 
 
 #ifdef BTREE_WITH_DELETION
 
-    /** \brief Для заданного ключа \c k находит первое вхождение его в дерево по принципу эквивалентности
-     *  и удаляет его из дерева.
-     *
-     *  \returns истину, если удален, ложь иначе.
-     */
     bool remove (const Byte* k);
 
-    /** \brief Для заданного ключа \c k находит все вхождения его в дерево по принципу эквивалентности
-     *  и удаляет их.
-     *
-     *  \returns Число удаленных узлов.
-     */
     int removeAll(const Byte* k);
 
 #endif
@@ -1053,169 +825,104 @@ protected:
 
 public:
 
-    /** \brief Вставляет в дерево ключ k с учетом порядка.
-     *
-     */
     void insert(const Byte* k);
 
-    /** \brief Для заданного ключа \c k ищет первое его вхождение в дерево по принципу эквивалентности.
-     *  Если ключ найден, возвращает указатель на подлежащий массив, иначе nullptr.
-     */
     Byte* search(const Byte* k);
 
-    /**
-     * Searches the first occurrence of the key k recursively in the given page.
-     * @param k The key for searching.
-     * @param currentPage The given page.
-     * @param currentDepth The depth of the given page in the tree.
-     * @return The Byte* array with the copy of the key k.
-     */
     Byte* search(const Byte* k, PageWrapper& currentPage, UInt currentDepth);
 
-    /** \brief Для заданного ключа \c k ищет все его его вхождения в дерево по принципу эквивалентности.
-     *  Каждый найденный ключ добавляется в переданный список ключей \c keys.
-     *
-     *  \returns число найденных элементов
-     */
     int searchAll(const Byte* k, std::list<Byte*>& keys);
 
-    /**
-     * Searches all the occurrences of the key k recursively in the given page.
-     * @param k The key for searching.
-     * @param keys The list for saving the Byte* arrays with the copies of the key k.
-     * @param currentPage The given page.
-     * @param currentDepth The depth of the given page in the tree.
-     * @return The amount of all the occurrences of the key k in the given subtree.
-     */
     int searchAll(const Byte* k, std::list<Byte*>& keys, PageWrapper& currentPage, UInt currentDepth);
 
 
 #ifdef BTREE_WITH_DELETION
 
-    /** \brief Для заданного ключа \c k находит первое вхождение его в дерево по принципу эквивалентности
-     *  и удаляет его из дерева.
-     *
-     *  \returns истину, если удален, ложь иначе.
-     */
     bool remove (const Byte* k);
 
-    /** \brief Для заданного ключа \c k находит все вхождения его в дерево по принципу эквивалентности
-     *  и удаляет их.
-     *
-     *  \returns Число удаленных узлов.
-     */
     int removeAll(const Byte* k);
 
 #endif
 
 };
 
-/** \brief B-дерево, основанное на файловом потоке.
- *
- *  Конкретизирует понятие дерево на случай использования файла для хранения.
- */
+/** \brief B-tree based on the file stream. */
 class FileBaseBTree : public BaseBTree {
+
 public:
-    /** \brief Конструктор по умолчанию.
-     *
-     *  Для "открытия" дерева необходимо использовать метод open().
-     */
+
+    /** \brief Default constructor */
     FileBaseBTree();
 
 
-    /** \brief Конструирует новое B-дерево со структурой, определяемой переданными параметрами.
+    /** \brief Constructs new B-tree defined by the received params.
      *
-     *  Создает новое дерево и записывает его в файл \c fileName. Если файл существует,
-     *  он перезаписывается. Если файл не может быть открыт, генерируется исключительная ситуация.
-     *
-     *  Конструктор эквивалентен созданию объекта с параметрами по умолчанию с последующим
-     *  открытием методом open().
+     *  Constructs new tree and writes it to the file with name \c fileName. If file exists,
+     *  it will be overwritten. If file cannot be open, throws an exception.
      */
     FileBaseBTree(UShort order, UShort recSize, IComparator* comparator, const std::string& fileName);
 
 
-    /** \brief Конструирует дерево на основе существующего файла B-дерева.
+    /** \brief Constructs the tree from existing tree's file.
      *
-     *  Если файл не может быть открыт, прочитан или содержит неверную структуру,
-     *  кидает исключительную ситуацию.
+     *  If file cannot be opened, read or is incorrect, throws an exception.
      */
     FileBaseBTree(const std::string& fileName, IComparator* comparator);
 
-    /** \brief Деструктор.
+    /** \brief Destructor.
      *
-     *  Не забывает закрыть открытые файловые потоки.
+     *  Closes the opened file streams.
      */
     ~FileBaseBTree();
 
 protected:
-    FileBaseBTree(const FileBaseBTree&);                        ///< КК не доступен.
-    FileBaseBTree& operator= (FileBaseBTree&);                  ///< Оператор присваивания недоступен.
+
+    FileBaseBTree(const FileBaseBTree&);
+
+    FileBaseBTree& operator= (FileBaseBTree&);
 
 public:
 
-    /** \brief Открывает неактивное к моменту вызова метода дерево по типу конструктора с таким же
-     *  набором параметров.
-     *  Если дерево уже открыто, генерирует исключительную ситуацию.
-     */
-    void create(UShort order, UShort recSize, //IComparator* comparator, 
+    /** \brief Creates and opens inactive tree with the same params. If tree is already opened, throws an exception. */
+    void create(UShort order, UShort recSize,
         const std::string& fileName);
 
-    /** \brief Загружает дерево из файла.
-     *
-     *  Если дерево уже открыто, генерирует исключительную ситуацию.
-     */
-    void open(const std::string& fileName); // , IComparator* comparator);
+    /** \brief Loads the tree from the file. If tree is already opened, throws an exception. */
+    void open(const std::string& fileName);
 
-    /** \brief Закрывает открытое дерево.
-     *
-     *  Закрывает дерево и ассоциированные с ним потоки.
-     *  Если дерево не открыто, просто ничего не делает (искл. НЕ генерирует для удобства).
-     */
+    /** \brief Closes the opened tree and the streams. */
     void close();
+
 public:
 
-    // /** \brief Возвращает истину, если дерево открыто, ложь иначе. */
-    //\copydoc
+    /** \copydoc */
     virtual bool isOpen() const override;
     
 protected:
 
-    /** \brief Открывает поток и подготавливает дерево. В отличие от соответствующего конструктора
-     *  и метода open() не выполняет никаких проверок, которые подразумеваются быть сделанными там.
-     */
+    /** \brief The internal part of create(). */
     void createInternal(UShort order, UShort recSize, // IComparator* comparator, 
         const std::string& fileName);
 
-    /** \brief Загружает дерево из файла \c fileName.
-     *
-     *  Если файл не может быть открыт, прочитан или содержит неверную структуру,
-     *  кидает исключительную ситуацию.
-     */
+    /** \brief The internal part of open(). */
     void loadInternal(const std::string& fileName); // , IComparator* comparator);
 
 
-    /** \brief Закрывает файловые потоки, ассоциированные с деревом.
-     *
-     *  Выполняет инициализацию объекта к такому состоянию, чтобы можно было повторно открыть.
-     */
+    /** \brief The internal part of close(). */
     void closeInternal();
 
-    /** \brief Проверяет параметры дерева и, если они некорректны, киает исключение. */
+    /** \brief Checks the tree's params. If they are incorrect, throws an exception. */
     void checkTreeParams(UShort order, UShort recSize);
 
 protected:
-    /** \brief Имя файла с деревом. */
+
+    /** \brief The tree's file name. */
     std::string _fileName;
 
-    /** \brief Файловый поток, храняющий дерево. */
+    /** \brief The file stream storing the tree. */
     std::fstream _fileStream;
 
 }; // class FileBaseBTree
-
-
-
-
-
 
 } // namespace xi
 
