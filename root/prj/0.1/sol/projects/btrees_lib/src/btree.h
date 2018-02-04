@@ -964,9 +964,151 @@ protected:
 
 }; // class BaseBTree
 
+class BaseBPlusTree : public BaseBTree {
+
+public:
+
+    ~BaseBPlusTree();
+
+protected:
+
+    BaseBPlusTree(IComparator* comparator, std::iostream* stream);
+
+    BaseBPlusTree(const BaseBPlusTree&);
+
+    BaseBPlusTree& operator=(BaseBPlusTree&);
+
+public:
+
+    /** \brief Вставляет в дерево ключ k с учетом порядка.
+     *
+     */
+    void insert(const Byte* k);
+
+    /** \brief Для заданного ключа \c k ищет первое его вхождение в дерево по принципу эквивалентности.
+     *  Если ключ найден, возвращает указатель на подлежащий массив, иначе nullptr.
+     */
+    Byte* search(const Byte* k);
+
+    /**
+     * Searches the first occurrence of the key k recursively in the given page.
+     * @param k The key for searching.
+     * @param currentPage The given page.
+     * @param currentDepth The depth of the given page in the tree.
+     * @return The Byte* array with the copy of the key k.
+     */
+    Byte* search(const Byte* k, PageWrapper& currentPage, UInt currentDepth);
+
+    /** \brief Для заданного ключа \c k ищет все его его вхождения в дерево по принципу эквивалентности.
+     *  Каждый найденный ключ добавляется в переданный список ключей \c keys.
+     *
+     *  \returns число найденных элементов
+     */
+    int searchAll(const Byte* k, std::list<Byte*>& keys);
+
+    /**
+     * Searches all the occurrences of the key k recursively in the given page.
+     * @param k The key for searching.
+     * @param keys The list for saving the Byte* arrays with the copies of the key k.
+     * @param currentPage The given page.
+     * @param currentDepth The depth of the given page in the tree.
+     * @return The amount of all the occurrences of the key k in the given subtree.
+     */
+    int searchAll(const Byte* k, std::list<Byte*>& keys, PageWrapper& currentPage, UInt currentDepth);
 
 
+#ifdef BTREE_WITH_DELETION
 
+    /** \brief Для заданного ключа \c k находит первое вхождение его в дерево по принципу эквивалентности
+     *  и удаляет его из дерева.
+     *
+     *  \returns истину, если удален, ложь иначе.
+     */
+    bool remove (const Byte* k);
+
+    /** \brief Для заданного ключа \c k находит все вхождения его в дерево по принципу эквивалентности
+     *  и удаляет их.
+     *
+     *  \returns Число удаленных узлов.
+     */
+    int removeAll(const Byte* k);
+
+#endif
+
+};
+
+class BaseBSTree : public BaseBTree {
+
+public:
+
+    ~BaseBSTree();
+
+protected:
+
+    BaseBSTree(IComparator* comparator, std::iostream* stream);
+
+    BaseBSTree(const BaseBSTree&);
+
+    BaseBSTree& operator=(BaseBSTree&);
+
+public:
+
+    /** \brief Вставляет в дерево ключ k с учетом порядка.
+     *
+     */
+    void insert(const Byte* k);
+
+    /** \brief Для заданного ключа \c k ищет первое его вхождение в дерево по принципу эквивалентности.
+     *  Если ключ найден, возвращает указатель на подлежащий массив, иначе nullptr.
+     */
+    Byte* search(const Byte* k);
+
+    /**
+     * Searches the first occurrence of the key k recursively in the given page.
+     * @param k The key for searching.
+     * @param currentPage The given page.
+     * @param currentDepth The depth of the given page in the tree.
+     * @return The Byte* array with the copy of the key k.
+     */
+    Byte* search(const Byte* k, PageWrapper& currentPage, UInt currentDepth);
+
+    /** \brief Для заданного ключа \c k ищет все его его вхождения в дерево по принципу эквивалентности.
+     *  Каждый найденный ключ добавляется в переданный список ключей \c keys.
+     *
+     *  \returns число найденных элементов
+     */
+    int searchAll(const Byte* k, std::list<Byte*>& keys);
+
+    /**
+     * Searches all the occurrences of the key k recursively in the given page.
+     * @param k The key for searching.
+     * @param keys The list for saving the Byte* arrays with the copies of the key k.
+     * @param currentPage The given page.
+     * @param currentDepth The depth of the given page in the tree.
+     * @return The amount of all the occurrences of the key k in the given subtree.
+     */
+    int searchAll(const Byte* k, std::list<Byte*>& keys, PageWrapper& currentPage, UInt currentDepth);
+
+
+#ifdef BTREE_WITH_DELETION
+
+    /** \brief Для заданного ключа \c k находит первое вхождение его в дерево по принципу эквивалентности
+     *  и удаляет его из дерева.
+     *
+     *  \returns истину, если удален, ложь иначе.
+     */
+    bool remove (const Byte* k);
+
+    /** \brief Для заданного ключа \c k находит все вхождения его в дерево по принципу эквивалентности
+     *  и удаляет их.
+     *
+     *  \returns Число удаленных узлов.
+     */
+    int removeAll(const Byte* k);
+
+#endif
+
+};
 
 /** \brief B-дерево, основанное на файловом потоке.
  *
