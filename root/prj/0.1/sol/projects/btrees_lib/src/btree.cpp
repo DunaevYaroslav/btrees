@@ -1191,6 +1191,380 @@ void BaseBTree::PageWrapper::insertNonFull(const Byte* k)
     }
 }
 
+void BaseBPlusTree::PageWrapper::splitChild(UShort iChild, BaseBTree::PageWrapper& leftChild,
+        BaseBTree::PageWrapper& rightChild)
+{
+    if (isFull())
+        throw std::domain_error("A parent node is full, so its child can't be splitted");
+
+    if (iChild > getKeysNum())
+        throw std::invalid_argument("Cursor not exists");
+
+    if (leftChild.getPageNum() == 0)
+        leftChild.readPageFromChild(*this, iChild);
+
+    // Allocating page for the right child which is new created child.
+    rightChild.allocPage(_tree->getMinKeys(), leftChild.isLeaf());
+
+    // Copying keys and cursors from the right half of the left child to the right child.
+    rightChild.copyKeys(rightChild.getKey(0), leftChild.getKey(_tree->getOrder()), _tree->getMinKeys());
+    if(!leftChild.isLeaf())
+        copyCursors(rightChild.getCursorPtr(0), leftChild.getCursorPtr(_tree->getOrder()), _tree->getOrder());
+
+    // Increasing number of keys num in the parent node for inserting median.
+    UShort keysNum = getKeysNum() + 1;
+    setKeyNum(keysNum);
+
+    // Shifting coursors in the parent to the right.
+    for(int j = keysNum - 1; j > iChild; --j)
+        copyCursors(getCursorPtr(j + 1), getCursorPtr(j), 1);
+
+    // Setting coursor in the parent to the right child.
+    setCursor(iChild + 1, rightChild.getPageNum());
+
+    // Shifting coursors in the parent to the right.
+    for(int j = keysNum - 2; j >= iChild; --j)
+        copyKey(getKey(j + 1), getKey(j));
+
+    // Moving median to the parent.
+    copyKey(getKey(iChild), leftChild.getKey(_tree->getOrder() - 1));
+//    leftChild.setKeyNum(_tree->_minKeys);
+
+    // Writing the pages to the disk.
+    leftChild.writePage();
+    rightChild.writePage();
+    writePage();
+}
+
+Byte* BaseBPlusTree::search(const Byte* k, BaseBTree::PageWrapper& currentPage, UInt currentDepth)
+{
+    int i;
+    UShort keysNum = currentPage.getKeysNum();
+    for(i = 0; i < keysNum && _comparator->compare(currentPage.getKey(i), k, _recSize); ++i) ;
+
+    if(currentPage.isLeaf())
+    {
+        // If the key has been found.
+        if(i < keysNum && _comparator->isEqual(k, currentPage.getKey(i), _recSize))
+        {
+            Byte* result = new Byte[_recSize];
+            currentPage.copyKey(result, currentPage.getKey(i));
+            return result;
+        }
+        else // If the key has not been found and the current page is a leaf, there is not the key in the tree.
+            return nullptr;
+    }
+    else // If the current page is not a leaf.
+    {
+        PageWrapper nextPage(this);
+        nextPage.readPageFromChild(currentPage, i);
+        return search(k, nextPage, currentDepth + 1);
+    }
+}
+
+int BaseBPlusTree::searchAll(const Byte* k, std::list<Byte*>& keys, BaseBTree::PageWrapper& currentPage,
+                UInt currentDepth)
+{
+    if(currentDepth > _maxSearchDepth)
+        _maxSearchDepth = currentDepth;
+
+    int amount = 0;
+    int i;
+    UShort keysNum = currentPage.getKeysNum();
+    bool isLeaf = currentPage.isLeaf();
+
+    for(i = 0; i < keysNum && _comparator->compare(currentPage.getKey(i), k, _recSize); ++i) ;
+
+    int first = i;
+
+    PageWrapper nextPage(this);
+    for( ; i < keysNum && (i == first || _comparator->isEqual(k, currentPage.getKey(i), _recSize)); ++i)
+    {
+        if(isLeaf && _comparator->isEqual(k, currentPage.getKey(i), _recSize)) // If the key has been found and
+                                                                               // and the current page is a leaf.
+        {
+            Byte* result = new Byte[_recSize];
+            currentPage.copyKey(result, currentPage.getKey(i));
+            keys.push_back(result);
+            ++amount;
+        }
+
+        if(!isLeaf) // If the current page is not a leaf.
+        {
+            nextPage.readPageFromChild(currentPage, i);
+            amount += searchAll(k, keys, nextPage, currentDepth + 1);
+        }
+    }
+
+    if(!isLeaf) // If the current page is not a leaf.
+    {
+        nextPage.readPageFromChild(currentPage, i);
+        amount += searchAll(k, keys, nextPage, currentDepth + 1);
+    }
+
+    return amount;
+}
+
+bool BaseBPlusTree::remove(const Byte* k, BaseBTree::PageWrapper& currentPage)
+{
+    int i;
+    UShort keysNum = currentPage.getKeysNum();
+
+    for(i = 0; i < keysNum && _comparator->compare(currentPage.getKey(i), k, _recSize); ++i) ;
+
+    if(currentPage.isLeaf())
+    {
+        if(i < keysNum && _comparator->isEqual(k, currentPage.getKey(i), _recSize)) // Cases 1 and 2: if the key has
+                                                                                    // been found, removes it recursively.
+        {
+            if(currentPage.isRoot())
+                return removeByKeyNum(i, _rootPage);
+            else
+                return removeByKeyNum(i, currentPage);
+        }
+        else // If the key has not been found and the current page is a leaf, there is not the key in the tree.
+            return false;
+    }
+
+    // Case 3.
+    PageWrapper child(this);
+    PageWrapper leftNeighbour(this);
+    PageWrapper rightNeighbour(this);
+    if(prepareSubtree(i, currentPage, child, leftNeighbour, rightNeighbour))
+        return remove(k, leftNeighbour);
+    else
+        return remove(k, child);
+}
+
+int BaseBPlusTree::removeAll(const Byte* k, BaseBTree::PageWrapper& currentPage)
+{
+    if(currentPage.getKeysNum() == 0)
+        return 0;
+
+    int amount = 0;
+    int i;
+    UShort keysNum = currentPage.getKeysNum();
+    bool isLeaf = currentPage.isLeaf();
+    bool isRoot = currentPage.isRoot();
+
+    PageWrapper child(this);
+    PageWrapper leftNeighbour(this);
+    PageWrapper rightNeighbour(this);
+
+    for(i = 0; i < keysNum && _comparator->compare(currentPage.getKey(i), k, _recSize); ++i) ;
+
+    int first = i;
+
+    for( ; i <= keysNum && (i == first ||
+                            (i < keysNum && _comparator->isEqual(k, currentPage.getKey(i), _recSize)) ||
+                            (i > first && _comparator->isEqual(k, currentPage.getKey(i - 1), _recSize))); ++i)
+    {
+        if(isLeaf && i < keysNum && _comparator->isEqual(k, currentPage.getKey(i), _recSize)) // Cases 1 and 2: if the key
+                                                                                              // has been found, removes it recursively.
+        {
+            removeByKeyNum(i, currentPage);
+
+            if(isRoot && !currentPage.isRoot())
+            {
+                currentPage.readPage(_rootPageNum);
+                keysNum = currentPage.getKeysNum();
+                i = -1;
+                continue;
+            }
+
+            ++amount;
+
+            keysNum = currentPage.getKeysNum();
+            --i;
+
+            if(!currentPage.isRoot() && keysNum < _order)
+                return amount;
+
+            continue;
+        }
+
+        if(!isLeaf) // Case 3.
+        {
+            if(prepareSubtree(i, currentPage, child, leftNeighbour, rightNeighbour))
+            {
+                amount += removeAll(k, leftNeighbour);
+                --i;
+                if (leftNeighbour.getKeysNum() < _order)
+                    --i;
+            }
+            else
+            {
+                amount += removeAll(k, child);
+                if(child.getKeysNum() < _order)
+                    --i;
+            }
+
+            if(isRoot && !currentPage.isRoot() || currentPage.getKeysNum() > keysNum)
+            {
+                currentPage.readPage(_rootPageNum);
+                i = -1;
+                isLeaf = true;
+            }
+
+            if(currentPage.getKeysNum() < keysNum)
+                --i;
+
+            keysNum = currentPage.getKeysNum();
+        }
+
+    }
+
+    if(isRoot && currentPage.getData() != _rootPage.getData())
+        loadRootPage();
+
+    return amount;
+}
+
+bool BaseBPlusTree::prepareSubtree(UShort cursorNum, BaseBTree::PageWrapper &currentPage, BaseBTree::PageWrapper& child,
+        BaseBTree::PageWrapper& leftNeighbour, BaseBTree::PageWrapper& rightNeighbour)
+{
+    UShort keysNum = currentPage.getKeysNum();
+
+    // Reading the child from disk.
+    child.readPageFromChild(currentPage, cursorNum);
+    UShort childKeysNum = child.getKeysNum();
+    if(childKeysNum < _order) // If the number of keys in child is less than _order, we should consider cases 3a 3b.
+    {
+        if(cursorNum >= 1) // Checking case 3a for the left neighbour, if the cursor is not the first one.
+        {
+            leftNeighbour.readPageFromChild(currentPage, cursorNum - 1);
+            UShort neighbourKeysNum = leftNeighbour.getKeysNum();
+            if(neighbourKeysNum >= _order) // Case 3a for the left neighbour.
+            {
+                child.setKeyNum(++childKeysNum);
+                child.copyCursors(child.getCursorPtr(childKeysNum), child.getCursorPtr(childKeysNum - 1), 1);
+                for(int j = childKeysNum - 2; j >= 0; --j)
+                {
+                    child.copyKey(child.getKey(j + 1), child.getKey(j));
+                    child.copyCursors(child.getCursorPtr(j + 1), child.getCursorPtr(j), 1);
+                }
+
+                // Moving separator to the child.
+                child.copyKey(child.getKey(0), currentPage.getKey(cursorNum - 1));
+
+                // Replacing separator in the current page by the border key of the neighbour.
+                currentPage.copyKey(currentPage.getKey(cursorNum - 1), leftNeighbour.getKey(neighbourKeysNum - 1));
+
+                // Moving the border cursor from the neighbour to the child.
+                child.copyCursors(child.getCursorPtr(0), leftNeighbour.getCursorPtr(neighbourKeysNum), 1);
+
+                leftNeighbour.setKeyNum(--neighbourKeysNum);
+
+                child.writePage();
+                leftNeighbour.writePage();
+                currentPage.writePage();
+
+                return false;
+            }
+        }
+
+        if(cursorNum < keysNum) // Checking case 3b for the right neighbour, if the cursor is not the last one.
+        {
+            rightNeighbour.readPageFromChild(currentPage, cursorNum + 1);
+            UShort neighbourKeysNum = rightNeighbour.getKeysNum();
+            if(neighbourKeysNum >= _order) // Case 3a for the right neighbour.
+            {
+                child.setKeyNum(++childKeysNum);
+
+                // Moving separator to the child.
+                child.copyKey(child.getKey(childKeysNum - 1), currentPage.getKey(cursorNum));
+
+                // Replacing separator in the current page by the border key of the neighbour.
+                currentPage.copyKey(currentPage.getKey(cursorNum), rightNeighbour.getKey(0));
+
+                // Moving the border cursor from the neighbour to the child.
+                child.copyCursors(child.getCursorPtr(childKeysNum), rightNeighbour.getCursorPtr(0), 1);
+
+                for(int j = 0; j < neighbourKeysNum - 1; ++j)
+                {
+                    rightNeighbour.copyKey(rightNeighbour.getKey(j), rightNeighbour.getKey(j + 1));
+                    rightNeighbour.copyCursors(rightNeighbour.getCursorPtr(j), rightNeighbour.getCursorPtr(j + 1), 1);
+                }
+                rightNeighbour.copyCursors(rightNeighbour.getCursorPtr(neighbourKeysNum - 1), rightNeighbour.getCursorPtr(neighbourKeysNum), 1);
+                rightNeighbour.setKeyNum(--neighbourKeysNum);
+
+                child.writePage();
+                rightNeighbour.writePage();
+                currentPage.writePage();
+
+                return false;
+            }
+        }
+
+        // Case 3b: merging the child with the neighbour.
+
+        if(cursorNum >= 1)
+        {
+            mergeChildren(leftNeighbour, child, currentPage, cursorNum - 1);
+
+            return true;
+        }
+
+        mergeChildren(child, rightNeighbour, currentPage, cursorNum);
+
+        return false;
+    }
+
+    return false;
+}
+
+void BaseBPlusTree::mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& rightChild,
+        BaseBTree::PageWrapper& currentPage, UShort medianNum)
+{
+    UShort keysNum = currentPage.getKeysNum();
+    Byte* median = currentPage.getKey(medianNum);
+
+    leftChild.setKeyNum(_maxKeys);
+
+    // Moving median to the left child.
+//    leftChild.copyKey(leftChild.getKey(_order - 1), median);
+
+    // Moving keys and cursors from the right child to the left child.
+    leftChild.copyKeys(leftChild.getKey(_order), rightChild.getKey(0), _order - 1);
+    leftChild.copyCursors(leftChild.getCursorPtr(_order), rightChild.getCursorPtr(0), _order);
+
+    // Shifting keys and cursors in the current page to the left, after removing the median from the current page.
+    for(int j = medianNum; j < keysNum - 1; ++j)
+    {
+        currentPage.copyKey(currentPage.getKey(j), currentPage.getKey(j + 1));
+        currentPage.copyCursors(currentPage.getCursorPtr(j + 1), currentPage.getCursorPtr(j + 2), 1);
+    }
+
+    leftChild.writePage();
+
+    if(currentPage.getKeysNum() == 1) // In the case when the current page was root and becomes empty.
+    {
+        leftChild.setAsRoot(true);
+
+#ifdef BTREE_WITH_REUSING_FREE_PAGES
+
+        // Making the page free for reusing.
+        markPageFree(currentPage.getPageNum());
+
+#endif
+
+        loadRootPage();
+    }
+    else
+    {
+        currentPage.setKeyNum(keysNum - 1);
+        currentPage.writePage();
+    }
+
+
+#ifdef BTREE_WITH_REUSING_FREE_PAGES
+
+    // Making the page free for reusing.
+    markPageFree(rightChild.getPageNum());
+
+#endif
+}
+
 //==============================================================================
 // class FileBaseBTree
 //==============================================================================

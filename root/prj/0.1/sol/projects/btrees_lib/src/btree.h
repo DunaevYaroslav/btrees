@@ -325,7 +325,7 @@ public:
          * \param leftChild The left child wrapper.
          * \param rightChild The right child wrapper.
          */
-        void splitChild(UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild);
+        virtual void splitChild(UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild);
 
     protected:
 
@@ -788,7 +788,8 @@ public:
 
     public:
 
-        virtual void splitChild(UShort iChild) override;
+        virtual void splitChild(UShort iChild,
+                BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& rightChild) override;
 
         virtual void insertNonFull(const Byte* k) override;
 
@@ -819,14 +820,8 @@ public:
 
     virtual int removeAll(const Byte* k, BaseBTree::PageWrapper& currentPage) override;
 
-    virtual bool removeByKeyNum(UShort keyNum, BaseBTree::PageWrapper& currentPage) override;
-
     virtual bool prepareSubtree(UShort cursorNum, BaseBTree::PageWrapper& currentPage, BaseBTree::PageWrapper& child,
             BaseBTree::PageWrapper& leftNeighbour, BaseBTree::PageWrapper& rightNeighbour) override;
-
-    virtual const Byte* getAndRemoveMaxKey(BaseBTree::PageWrapper& pw) override;
-
-    virtual const Byte* getAndRemoveMinKey(BaseBTree::PageWrapper& pw) override;
 
     virtual void mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& rightChild,
             BaseBTree::PageWrapper& currentPage, UShort medianNum) override;
@@ -868,11 +863,6 @@ protected:
     BaseBSTree& operator=(BaseBSTree&);
 
 public:
-
-    virtual Byte* search(const Byte* k, BaseBTree::PageWrapper& currentPage, UInt currentDepth) override;
-
-    virtual int searchAll(const Byte* k, std::list<Byte*>& keys,
-            BaseBTree::PageWrapper& currentPage, UInt currentDepth) override;
 
 #ifdef BTREE_WITH_DELETION
 
