@@ -1233,7 +1233,6 @@ void BaseBPlusTree::PageWrapper::splitChild(UShort iChild, BaseBTree::PageWrappe
 
     // Moving median to the parent.
     copyKey(getKey(iChild), leftChild.getKey(_tree->getMinKeys()));
-//    leftChild.setKeyNum(_tree->_minKeys);
 
     // Writing the pages to the disk.
     leftChild.writePage();
@@ -1429,12 +1428,8 @@ void BaseBPlusTree::mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::
         BaseBTree::PageWrapper& currentPage, UShort medianNum)
 {
     UShort keysNum = currentPage.getKeysNum();
-    Byte* median = currentPage.getKey(medianNum);
 
     leftChild.setKeyNum(_maxKeys);
-
-    // Moving median to the left child.
-//    leftChild.copyKey(leftChild.getKey(_order - 1), median);
 
     // Moving keys and cursors from the right child to the left child.
     leftChild.copyKeys(leftChild.getKey(_minKeys + 1), rightChild.getKey(0), _minKeys);
