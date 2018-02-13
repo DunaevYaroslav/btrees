@@ -863,8 +863,7 @@ void BaseBTree::setOrder(UShort order, UShort recSize)
     _order = order;
     _recSize = recSize;
 
-    _minKeys = order - 1;
-    _maxKeys = 2 * order - 1;
+    setMinMaxKeysCounts();
 
     if (_maxKeys > MAX_KEYS_NUM)
         throw std::invalid_argument("For a given B-tree order, there is an excess of the maximum number of keys");
@@ -876,6 +875,11 @@ void BaseBTree::setOrder(UShort order, UShort recSize)
     reallocWorkPages();
 }
 
+void BaseBTree::setMinMaxKeysCounts()
+{
+    _minKeys = _order - 1;
+    _maxKeys = 2 * _order - 1;
+}
 
 void BaseBTree::reallocWorkPages()
 {
@@ -1470,6 +1474,12 @@ void BaseBPlusTree::mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::
     markPageFree(rightChild.getPageNum());
 
 #endif
+}
+
+void BaseBPlusTree::setMinMaxKeysCounts()
+{
+    _minKeys = _order;
+    _maxKeys = 2 * _order;
 }
 
 //==============================================================================

@@ -139,7 +139,7 @@ public:
 
         PageWrapper(BaseBTree* tr);
 
-        ~PageWrapper();
+        virtual ~PageWrapper();
 
         /** \brief Reallocates memory for page. */
         void reallocData(UInt sz);
@@ -655,6 +655,8 @@ protected:
     /** \brief Sets the tree's order and recalculates the associated values. */
     void setOrder(UShort order, UShort recSize);
 
+    virtual void setMinMaxKeysCounts();
+
     /** \brief Reallocates the memory for the working pages. */
     void reallocWorkPages();
 
@@ -782,16 +784,14 @@ public:
 
     public:
 
-        PageWrapper(BaseBPlusTree* tr);
+        PageWrapper(BaseBPlusTree* tr) : BaseBTree::PageWrapper(tr) { }
 
-        ~PageWrapper();
+        ~PageWrapper() { }
 
     public:
 
         virtual void splitChild(UShort iChild,
                 BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& rightChild) override;
-
-        virtual void insertNonFull(const Byte* k) override;
 
     };
 
@@ -825,6 +825,10 @@ public:
 
 #endif
 
+protected:
+
+    virtual void setMinMaxKeysCounts() override;
+
 };
 
 class BaseBSTree : public BaseBTree {
@@ -835,9 +839,9 @@ public:
 
     public:
 
-        PageWrapper(BaseBSTree* tr);
+        PageWrapper(BaseBSTree* tr) : BaseBTree::PageWrapper(tr) { }
 
-        ~PageWrapper();
+        ~PageWrapper() { }
 
     public:
 
@@ -880,6 +884,10 @@ public:
             BaseBTree::PageWrapper& currentPage, UShort medianNum) override;
 
 #endif
+
+protected:
+
+    virtual void setMinMaxKeysCounts() override;
 
 };
 
