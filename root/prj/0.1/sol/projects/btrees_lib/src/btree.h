@@ -820,9 +820,6 @@ public:
 
     virtual int removeAll(const Byte* k, BaseBTree::PageWrapper& currentPage) override;
 
-    virtual bool prepareSubtree(UShort cursorNum, BaseBTree::PageWrapper& currentPage, BaseBTree::PageWrapper& child,
-            BaseBTree::PageWrapper& leftNeighbour, BaseBTree::PageWrapper& rightNeighbour) override;
-
     virtual void mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& rightChild,
             BaseBTree::PageWrapper& currentPage, UShort medianNum) override;
 
