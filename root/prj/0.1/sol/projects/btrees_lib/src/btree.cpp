@@ -315,7 +315,7 @@ int BaseBTree::removeAll(const Byte* k, PageWrapper& currentPage)
             keysNum = currentPage.getKeysNum();
             --i;
 
-            if(!currentPage.isRoot() && keysNum < _order)
+            if(!currentPage.isRoot() && keysNum <= _minKeys)
                 return amount;
 
             continue;
@@ -327,13 +327,13 @@ int BaseBTree::removeAll(const Byte* k, PageWrapper& currentPage)
             {
                 amount += removeAll(k, leftNeighbour);
                 --i;
-                if (leftNeighbour.getKeysNum() < _order)
+                if (leftNeighbour.getKeysNum() <= _minKeys)
                     --i;
             }
             else
             {
                 amount += removeAll(k, child);
-                if(child.getKeysNum() < _order)
+                if(child.getKeysNum() <= _minKeys)
                     --i;
             }
 
@@ -381,15 +381,15 @@ bool BaseBTree::removeByKeyNum(UShort keyNum, PageWrapper& currentPage)
 
     PageWrapper leftChild(this), rightChild(this);
     leftChild.readPageFromChild(currentPage, keyNum);
-    if(leftChild.getKeysNum() >= _order) // If the left child has not less than _order elements, we should get and recursively remove
-                                         // predecessor of the removed key, and replace the removed key by this predecessor (case 2a).
+    if(leftChild.getKeysNum() >= _minKeys + 1) // If the left child has not less than _order elements, we should get and recursively remove
+                                               // predecessor of the removed key, and replace the removed key by this predecessor (case 2a).
         replace = getAndRemoveMaxKey(leftChild);
 
     if(replace == nullptr)
     {
         rightChild.readPageFromChild(currentPage, keyNum + 1);
-        if(rightChild.getKeysNum() >= _order) // If the right child has not less than _order elements, we should get and recursively remove
-                                              // successor of the removed key, and replace the removed key by this predecessor (case 2b).
+        if(rightChild.getKeysNum() >= _minKeys + 1) // If the right child has not less than _order elements, we should get and recursively remove
+                                                    // successor of the removed key, and replace the removed key by this predecessor (case 2b).
             replace = getAndRemoveMinKey(rightChild);
     }
 
@@ -424,13 +424,13 @@ bool BaseBTree::prepareSubtree(UShort cursorNum, PageWrapper& currentPage, PageW
     // Reading the child from disk.
     child.readPageFromChild(currentPage, cursorNum);
     UShort childKeysNum = child.getKeysNum();
-    if(childKeysNum < _order) // If the number of keys in child is less than _order, we should consider cases 3a 3b.
+    if(childKeysNum <= _minKeys) // If the number of keys in child is less than _order, we should consider cases 3a 3b.
     {
         if(cursorNum >= 1) // Checking case 3a for the left neighbour, if the cursor is not the first one.
         {
             leftNeighbour.readPageFromChild(currentPage, cursorNum - 1);
             UShort neighbourKeysNum = leftNeighbour.getKeysNum();
-            if(neighbourKeysNum >= _order) // Case 3a for the left neighbour.
+            if(neighbourKeysNum >= _minKeys + 1) // Case 3a for the left neighbour.
             {
                 child.setKeyNum(++childKeysNum);
                 child.copyCursors(child.getCursorPtr(childKeysNum), child.getCursorPtr(childKeysNum - 1), 1);
@@ -463,7 +463,7 @@ bool BaseBTree::prepareSubtree(UShort cursorNum, PageWrapper& currentPage, PageW
         {
             rightNeighbour.readPageFromChild(currentPage, cursorNum + 1);
             UShort neighbourKeysNum = rightNeighbour.getKeysNum();
-            if(neighbourKeysNum >= _order) // Case 3a for the right neighbour.
+            if(neighbourKeysNum >= _minKeys + 1) // Case 3a for the right neighbour.
             {
                 child.setKeyNum(++childKeysNum);
 
@@ -573,11 +573,11 @@ void BaseBTree::mergeChildren(PageWrapper& leftChild, PageWrapper& rightChild, P
     leftChild.setKeyNum(_maxKeys);
 
     // Moving median to the left child.
-    leftChild.copyKey(leftChild.getKey(_order - 1), median);
+    leftChild.copyKey(leftChild.getKey(_minKeys), median);
 
     // Moving keys and cursors from the right child to the left child.
-    leftChild.copyKeys(leftChild.getKey(_order), rightChild.getKey(0), _order - 1);
-    leftChild.copyCursors(leftChild.getCursorPtr(_order), rightChild.getCursorPtr(0), _order);
+    leftChild.copyKeys(leftChild.getKey(_minKeys + 1), rightChild.getKey(0), _minKeys);
+    leftChild.copyCursors(leftChild.getCursorPtr(_minKeys + 1), rightChild.getCursorPtr(0), _minKeys + 1);
 
     // Shifting keys and cursors in the current page to the left, after removing the median from the current page.
     for(int j = medianNum; j < keysNum - 1; ++j)
@@ -1111,9 +1111,9 @@ void BaseBTree::PageWrapper::splitChild(UShort iChild, PageWrapper& leftChild, P
     rightChild.allocPage(_tree->_minKeys, leftChild.isLeaf());
 
     // Copying keys and cursors from the right half of the left child to the right child.
-    rightChild.copyKeys(rightChild.getKey(0), leftChild.getKey(_tree->_order), _tree->_minKeys);
+    rightChild.copyKeys(rightChild.getKey(0), leftChild.getKey(_tree->_minKeys + 1), _tree->_minKeys);
     if(!leftChild.isLeaf())
-        copyCursors(rightChild.getCursorPtr(0), leftChild.getCursorPtr(_tree->_order), _tree->_order);
+        copyCursors(rightChild.getCursorPtr(0), leftChild.getCursorPtr(_tree->_minKeys + 1), _tree->_minKeys + 1);
 
     // Increasing number of keys num in the parent node for inserting median.
     UShort keysNum = getKeysNum() + 1;
@@ -1131,7 +1131,7 @@ void BaseBTree::PageWrapper::splitChild(UShort iChild, PageWrapper& leftChild, P
         copyKey(getKey(j + 1), getKey(j));
 
     // Moving median to the parent.
-    copyKey(getKey(iChild), leftChild.getKey(_tree->_order - 1));
+    copyKey(getKey(iChild), leftChild.getKey(_tree->_minKeys));
     leftChild.setKeyNum(_tree->_minKeys);
 
     // Writing the pages to the disk.
@@ -1211,9 +1211,10 @@ void BaseBPlusTree::PageWrapper::splitChild(UShort iChild, BaseBTree::PageWrappe
     rightChild.allocPage(_tree->getMinKeys(), leftChild.isLeaf());
 
     // Copying keys and cursors from the right half of the left child to the right child.
-    rightChild.copyKeys(rightChild.getKey(0), leftChild.getKey(_tree->getOrder()), _tree->getMinKeys());
+    rightChild.copyKeys(rightChild.getKey(0), leftChild.getKey(_tree->getMinKeys() + 1), _tree->getMinKeys());
     if(!leftChild.isLeaf())
-        copyCursors(rightChild.getCursorPtr(0), leftChild.getCursorPtr(_tree->getOrder()), _tree->getOrder());
+        copyCursors(rightChild.getCursorPtr(0),
+                leftChild.getCursorPtr(_tree->getMinKeys() + 1), _tree->getMinKeys() + 1);
 
     // Increasing number of keys num in the parent node for inserting median.
     UShort keysNum = getKeysNum() + 1;
@@ -1231,7 +1232,7 @@ void BaseBPlusTree::PageWrapper::splitChild(UShort iChild, BaseBTree::PageWrappe
         copyKey(getKey(j + 1), getKey(j));
 
     // Moving median to the parent.
-    copyKey(getKey(iChild), leftChild.getKey(_tree->getOrder() - 1));
+    copyKey(getKey(iChild), leftChild.getKey(_tree->getMinKeys()));
 //    leftChild.setKeyNum(_tree->_minKeys);
 
     // Writing the pages to the disk.
@@ -1381,7 +1382,7 @@ int BaseBPlusTree::removeAll(const Byte* k, BaseBTree::PageWrapper& currentPage)
             keysNum = currentPage.getKeysNum();
             --i;
 
-            if(!currentPage.isRoot() && keysNum < _order)
+            if(!currentPage.isRoot() && keysNum <= _minKeys)
                 return amount;
 
             continue;
@@ -1393,13 +1394,13 @@ int BaseBPlusTree::removeAll(const Byte* k, BaseBTree::PageWrapper& currentPage)
             {
                 amount += removeAll(k, leftNeighbour);
                 --i;
-                if (leftNeighbour.getKeysNum() < _order)
+                if (leftNeighbour.getKeysNum() <= _minKeys)
                     --i;
             }
             else
             {
                 amount += removeAll(k, child);
-                if(child.getKeysNum() < _order)
+                if(child.getKeysNum() <= _minKeys)
                     --i;
             }
 
@@ -1436,8 +1437,8 @@ void BaseBPlusTree::mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::
 //    leftChild.copyKey(leftChild.getKey(_order - 1), median);
 
     // Moving keys and cursors from the right child to the left child.
-    leftChild.copyKeys(leftChild.getKey(_order), rightChild.getKey(0), _order - 1);
-    leftChild.copyCursors(leftChild.getCursorPtr(_order), rightChild.getCursorPtr(0), _order);
+    leftChild.copyKeys(leftChild.getKey(_minKeys + 1), rightChild.getKey(0), _minKeys);
+    leftChild.copyCursors(leftChild.getCursorPtr(_minKeys + 1), rightChild.getCursorPtr(0), _minKeys + 1);
 
     // Shifting keys and cursors in the current page to the left, after removing the median from the current page.
     for(int j = medianNum; j < keysNum - 1; ++j)
