@@ -47,6 +47,8 @@ namespace xi {
 class BaseBTree {
 public:
 
+    enum TreeType { B_TREE, B_PLUS_TREE, B_STAR_TREE };
+
 #pragma pack(push, 1)                           
     /** \brief File header structure.
      *
@@ -378,22 +380,22 @@ public:
 
 public:
 
-    /** \brief Destructor. */
-    ~BaseBTree();
-
-protected:
-
     /** \brief Constructs new B-tree using received params.
-     *
-     *  Constructs new tree and writes it into \c stream. If file exists,
-     *  it will be overwritten. If file cannot be open, throws an exception.
-     *  \c order defines tree's order, \c recSize defines
-     *  key's size (length) in bytes.
-     */
+    *
+    *  Constructs new tree and writes it into \c stream. If file exists,
+    *  it will be overwritten. If file cannot be open, throws an exception.
+    *  \c order defines tree's order, \c recSize defines
+    *  key's size (length) in bytes.
+    */
     BaseBTree(UShort order, UShort recSize, IComparator* comparator, std::iostream* stream);
 
     /** \brief Constructs blank tree, params of this tree will be read from existing tree's file. */
     BaseBTree(IComparator* comparator, std::iostream* stream);
+
+    /** \brief Destructor. */
+    ~BaseBTree();
+
+protected:
 
     BaseBTree(const BaseBTree&);
 
@@ -401,8 +403,17 @@ protected:
 
 public:
 
+    /** \brief Creates the tree and its root page and writes them to the stream. */
+    void createTree(UShort order, UShort recSize);
+
+    /** \brief Loads the tree and its root page from the stream. */
+    void loadTree();
+
+    /** \brief Resets the tree's params. */
+    void resetBTree();
+
     /** \brief Returns true if tree is opened, otherwise returns false. */
-    virtual bool isOpen() const { return false; } // = 0;
+    bool isOpen() const { return false; } // = 0;
 
     /** \brief Reads page with number \c pnum from the file to the memory in \c dst.
      *
@@ -534,6 +545,8 @@ public:
     /** \brief Returns the tree's comparator. */
     IComparator* getComparator() const { return _comparator; }
 
+    void setStream(std::iostream* s) { _stream  = s; }
+
 protected:
 
 #ifdef BTREE_WITH_DELETION
@@ -600,14 +613,8 @@ protected:
 
 #endif
 
-    /** \brief Loads the tree and its root page from the stream. */
-    void loadTree();
-
     /** \brief Loads the tree's root page. */
     void loadRootPage();
-
-    /** \brief Creates the tree and its root page and writes them to the stream. */
-    void createTree(UShort order, UShort recSize);
 
     /** \brief Creates and writes the tree's root page and writes it to the stream. */
     void createRootPage();
@@ -720,9 +727,6 @@ protected:
     /** \brief The internal part of the allocPage(). */
     UInt allocPageInternal(PageWrapper& pw, UShort keysNum, bool isRoot, bool isLeaf);
 
-    /** \brief Resets the tree's params. */
-    void resetBTree();
-
 protected:
 
     /** \brief Defines the tree's order. */
@@ -797,11 +801,14 @@ public:
 
 public:
 
+    BaseBPlusTree(UShort order, UShort recSize, IComparator* comparator, std::iostream* stream)
+            : BaseBTree(order, recSize, comparator, stream) { }
+
+    BaseBPlusTree(IComparator* comparator, std::iostream* stream) : BaseBTree(comparator, stream) { }
+
     ~BaseBPlusTree();
 
 protected:
-
-    BaseBPlusTree(IComparator* comparator, std::iostream* stream);
 
     BaseBPlusTree(const BaseBPlusTree&);
 
@@ -853,11 +860,14 @@ public:
 
 public:
 
+    BaseBSTree(UShort order, UShort recSize, IComparator* comparator, std::iostream* stream)
+    : BaseBTree(order, recSize, comparator, stream) { }
+
+    BaseBSTree(IComparator* comparator, std::iostream* stream) : BaseBTree(comparator, stream) { }
+
     ~BaseBSTree();
 
 protected:
-
-    BaseBSTree(IComparator* comparator, std::iostream* stream);
 
     BaseBSTree(const BaseBSTree&);
 
@@ -892,27 +902,45 @@ protected:
 };
 
 /** \brief B-tree based on the file stream. */
-class FileBaseBTree : public BaseBTree {
+class FileBaseBTree {
 
 public:
 
     /** \brief Default constructor */
-    FileBaseBTree();
-
+    FileBaseBTree() : FileBaseBTree(BaseBTree::TreeType::B_TREE) { }
 
     /** \brief Constructs new B-tree defined by the received params.
      *
      *  Constructs new tree and writes it to the file with name \c fileName. If file exists,
      *  it will be overwritten. If file cannot be open, throws an exception.
      */
-    FileBaseBTree(UShort order, UShort recSize, IComparator* comparator, const std::string& fileName);
+    FileBaseBTree(UShort order, UShort recSize, BaseBTree::IComparator* comparator, const std::string& fileName)
+            : FileBaseBTree(BaseBTree::TreeType::B_TREE, order, recSize, comparator, fileName) { }
 
 
     /** \brief Constructs the tree from existing tree's file.
      *
      *  If file cannot be opened, read or is incorrect, throws an exception.
      */
-    FileBaseBTree(const std::string& fileName, IComparator* comparator);
+    FileBaseBTree(const std::string& fileName, BaseBTree::IComparator* comparator)
+            : FileBaseBTree(BaseBTree::TreeType::B_TREE, fileName, comparator) { }
+
+    /** \brief Constructs the multiway tree with received type. */
+    FileBaseBTree(BaseBTree::TreeType treeType);
+
+    /** \brief Constructs new multiway tree defined by the received params and type.
+     *
+     *  Constructs new tree and writes it to the file with name \c fileName. If file exists,
+     *  it will be overwritten. If file cannot be open, throws an exception.
+     */
+    FileBaseBTree(BaseBTree::TreeType treeType, UShort order, UShort recSize,
+            BaseBTree::IComparator* comparator, const std::string& fileName);
+
+    /** \brief Constructs the tree by the received type from existing tree's file.
+     *
+     *  If file cannot be opened, read or is incorrect, throws an exception.
+     */
+    FileBaseBTree(BaseBTree::TreeType treeType, const std::string& fileName, BaseBTree::IComparator* comparator);
 
     /** \brief Destructor.
      *
@@ -941,8 +969,10 @@ public:
 public:
 
     /** \copydoc */
-    virtual bool isOpen() const override;
-    
+    bool isOpen() const;
+
+    BaseBTree* getTree() const { return _tree; }
+
 protected:
 
     /** \brief The internal part of create(). */
@@ -966,6 +996,10 @@ protected:
 
     /** \brief The file stream storing the tree. */
     std::fstream _fileStream;
+
+    BaseBTree* _tree = nullptr;
+
+    bool isComposition = false;
 
 }; // class FileBaseBTree
 

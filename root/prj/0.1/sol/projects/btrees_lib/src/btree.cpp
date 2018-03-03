@@ -1482,31 +1482,41 @@ void BaseBPlusTree::setMinMaxKeysCounts()
 // class FileBaseBTree
 //==============================================================================
 
-FileBaseBTree::FileBaseBTree()
-    : BaseBTree(0, 0, nullptr, nullptr)
-{
-}
-
-FileBaseBTree::FileBaseBTree(UShort order, UShort recSize, IComparator* comparator, 
+FileBaseBTree::FileBaseBTree(BaseBTree::TreeType treeType, UShort order, UShort recSize, BaseBTree::IComparator* comparator,
     const std::string& fileName)
-    : FileBaseBTree()
+    : FileBaseBTree(treeType)
 {
-    _comparator = comparator;
+    _tree->setComparator(comparator);
 
     checkTreeParams(order, recSize);
     createInternal(order, recSize, fileName);
 }
 
-FileBaseBTree::FileBaseBTree(const std::string& fileName, IComparator* comparator)
-    : FileBaseBTree()
+FileBaseBTree::FileBaseBTree(BaseBTree::TreeType treeType, const std::string& fileName, BaseBTree::IComparator* comparator)
+    : FileBaseBTree(treeType)
 {
-    _comparator = comparator;
+    _tree->setComparator(comparator);
     loadInternal(fileName);
+}
+
+FileBaseBTree::FileBaseBTree(BaseBTree::TreeType treeType)
+{
+    switch (treeType)
+    {
+        case BaseBTree::TreeType::B_TREE: _tree = new BaseBTree(0, 0, nullptr, nullptr);
+        case BaseBTree::TreeType::B_PLUS_TREE: _tree = new BaseBPlusTree(0, 0, nullptr, nullptr);
+        case BaseBTree::TreeType ::B_STAR_TREE: _tree = new BaseBSTree(0, 0, nullptr, nullptr);
+    }
+
+    isComposition = true;
 }
 
 FileBaseBTree::~FileBaseBTree()
 {
     close();
+
+    if (isComposition)
+        delete _tree;
 }
 
 void FileBaseBTree::create(UShort order, UShort recSize,
@@ -1534,15 +1544,15 @@ void FileBaseBTree::createInternal(UShort order, UShort recSize,
     }
 
     _fileName = fileName;
-    _stream = &_fileStream;
+    _tree->setStream(&_fileStream);
 
-    createTree(order, recSize);
+    _tree->createTree(order, recSize);
 }
 
 void FileBaseBTree::open(const std::string& fileName)
 {
     if (isOpen())
-        throw std::runtime_error("B-tree file is already open");
+        throw std::runtime_error("Tree file is already open");
 
     loadInternal(fileName);
 }
@@ -1560,11 +1570,11 @@ void FileBaseBTree::loadInternal(const std::string& fileName)
     }
 
     _fileName = fileName;
-    _stream = &_fileStream;
+    _tree->setStream(&_fileStream);
 
 
     try {
-        loadTree();
+        _tree->loadTree();
     }
     catch (std::exception& e)
     {
@@ -1589,13 +1599,13 @@ void FileBaseBTree::close()
 void FileBaseBTree::closeInternal()
 {
     _fileStream.close();
-    resetBTree();
+    _tree->resetBTree();
 }
 
 void FileBaseBTree::checkTreeParams(UShort order, UShort recSize)
 {
     if (order < 1 || recSize == 0)
-        throw std::invalid_argument("B-tree order can't be less than 1 and record siaze can't be 0");
+        throw std::invalid_argument("Tree order can't be less than 1 and record siaze can't be 0");
 
 }
 

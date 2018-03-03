@@ -150,7 +150,7 @@ void Indexer::indexFile(const std::string& fileName)
 
         Key key(name, offset);
 
-        _bt->insert((Byte*) &key);
+        _bt->getTree()->insert((Byte*) &key);
 
         offset = file.tellg();
     }
@@ -175,7 +175,7 @@ std::list<std::wstring> Indexer::findAllOccurrences(const std::wstring& name, co
 
     Key nameKey(name);
     std::list<Byte*> occurrences;
-    _bt->searchAll((Byte*) &nameKey, occurrences);
+    _bt->getTree()->searchAll((Byte*) &nameKey, occurrences);
 
     std::list<std::wstring> occurrencesStrings;
 

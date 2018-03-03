@@ -65,7 +65,7 @@ public:
 #pragma pack(pop)
 
     /** \brief Represents the comparator of name part of the key. */
-    struct NameComparator : public FileBaseBTree::IComparator
+    struct NameComparator : public BaseBTree::IComparator
     {
         /** \brief Compares two name keys, returns true if the first name is lexicographically less than
          * the second name, false otherwise.
@@ -136,7 +136,7 @@ public:
      *
      *  \returns Tree's max depth reached during searching process.
      */
-    UInt getMaxSearchDepth() { return _bt != nullptr ? _bt->getMaxSearchDepth() : 0; }
+    UInt getMaxSearchDepth() { return _bt != nullptr ? _bt->getTree()->getMaxSearchDepth() : 0; }
 
 private:
 
