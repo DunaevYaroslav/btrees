@@ -1505,7 +1505,7 @@ FileBaseBTree::FileBaseBTree(BaseBTree::TreeType treeType)
     {
         case BaseBTree::TreeType::B_TREE: _tree = new BaseBTree(0, 0, nullptr, nullptr);
         case BaseBTree::TreeType::B_PLUS_TREE: _tree = new BaseBPlusTree(0, 0, nullptr, nullptr);
-        case BaseBTree::TreeType ::B_STAR_TREE: _tree = new BaseBSTree(0, 0, nullptr, nullptr);
+        case BaseBTree::TreeType::B_STAR_TREE: _tree = new BaseBSTree(0, 0, nullptr, nullptr);
     }
 
     isComposition = true;
