@@ -810,7 +810,7 @@ void BaseBTree::createRootPage()
 
 void BaseBTree::checkForOpenStream()
 {
-    if (!isOpen())
+    if (!isOpened())
         throw std::runtime_error("Stream is not ready");
 }
 
@@ -895,7 +895,7 @@ BaseBTree::PageWrapper::PageWrapper(BaseBTree* tr) :
     , _tree(tr)
     , _pageNum(0)
 {
-    if (_tree->isOpen())
+    if (_tree->isOpened())
         reallocData(_tree->getNodePageSize());
 }
 
@@ -1503,9 +1503,9 @@ FileBaseBTree::FileBaseBTree(BaseBTree::TreeType treeType)
 {
     switch (treeType)
     {
-        case BaseBTree::TreeType::B_TREE: _tree = new BaseBTree(0, 0, nullptr, nullptr);
-        case BaseBTree::TreeType::B_PLUS_TREE: _tree = new BaseBPlusTree(0, 0, nullptr, nullptr);
-        case BaseBTree::TreeType::B_STAR_TREE: _tree = new BaseBSTree(0, 0, nullptr, nullptr);
+        case BaseBTree::TreeType::B_TREE: _tree = new BaseBTree(0, 0, nullptr, nullptr); break;
+        case BaseBTree::TreeType::B_PLUS_TREE: _tree = new BaseBPlusTree(0, 0, nullptr, nullptr); break;
+//        case BaseBTree::TreeType::B_STAR_TREE: _tree = new BaseBSTree(0, 0, nullptr, nullptr); break;
     }
 
     isComposition = true;

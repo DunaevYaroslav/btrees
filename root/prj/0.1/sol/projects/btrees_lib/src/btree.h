@@ -413,7 +413,7 @@ public:
     void resetBTree();
 
     /** \brief Returns true if tree is opened, otherwise returns false. */
-    bool isOpen() const { return false; } // = 0;
+    bool isOpened() const { return _stream != nullptr && !_stream->fail(); } // = 0;
 
     /** \brief Reads page with number \c pnum from the file to the memory in \c dst.
      *
@@ -477,7 +477,7 @@ public:
      *
      *  \returns true if the key is removed, otherwise false.
      */    
-    bool remove (const Byte* k);
+    bool remove(const Byte* k);
 
     /** \brief For the given key \c k finds all its occurrences in the tree
      *  and removes them from the tree.
@@ -861,7 +861,7 @@ public:
 public:
 
     BaseBSTree(UShort order, UShort recSize, IComparator* comparator, std::iostream* stream)
-    : BaseBTree(order, recSize, comparator, stream) { }
+            : BaseBTree(order, recSize, comparator, stream) { }
 
     BaseBSTree(IComparator* comparator, std::iostream* stream) : BaseBTree(comparator, stream) { }
 
@@ -972,6 +972,22 @@ public:
     bool isOpen() const;
 
     BaseBTree* getTree() const { return _tree; }
+
+public:
+
+    void insert(const Byte* k) { _tree->insert(k); }
+
+    Byte* search(const Byte* k) { return _tree->search(k); }
+
+    int searchAll(const Byte* k, std::list<Byte*>& keys) { return _tree->searchAll(k, keys); }
+
+#ifdef BTREE_WITH_DELETION
+
+    bool remove(const Byte* k) { return _tree->remove(k); }
+
+    int removeAll(const Byte* k) { return _tree->removeAll(k); }
+
+#endif
 
 protected:
 
