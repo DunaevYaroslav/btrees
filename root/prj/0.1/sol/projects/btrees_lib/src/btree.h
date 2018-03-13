@@ -249,7 +249,7 @@ public:
         void setAsRoot(bool writeFlag = true);
 
         /** \brief Returns true if the page is fulfilled, otherwise returns false.  */
-        bool isFull() const { return getKeysNum() == _tree->getMaxKeys(); };
+        bool isFull() const { return _tree->isFull(*this); };
 
     public:
 
@@ -317,17 +317,6 @@ public:
          *  If comparator is not defined for the tree, throws an exception.
          */
         virtual void insertNonFull(const Byte* k);
-
-    protected:
-
-        /**
-         * \brief Inner child splitting method. It is necessary for reducing the number of the disk operations.
-         *
-         * \param iChild The number of child.
-         * \param leftChild The left child wrapper.
-         * \param rightChild The right child wrapper.
-         */
-        virtual void splitChild(UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild);
 
     protected:
 
@@ -549,6 +538,15 @@ public:
 
 protected:
 
+    /**
+     * \brief Inner child splitting method. It is necessary for reducing the number of the disk operations.
+     *
+     * \param iChild The number of child.
+     * \param leftChild The left child wrapper.
+     * \param rightChild The right child wrapper.
+     */
+     virtual void splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild);
+
 #ifdef BTREE_WITH_DELETION
 
     /**
@@ -612,6 +610,8 @@ protected:
             PageWrapper& currentPage, UShort medianNum);
 
 #endif
+
+    virtual bool isFull(const PageWrapper& page) const;
 
     /** \brief Loads the tree's root page. */
     void loadRootPage();
@@ -784,23 +784,6 @@ class BaseBPlusTree : public BaseBTree {
 
 public:
 
-    class PageWrapper : public BaseBTree::PageWrapper {
-
-    public:
-
-        PageWrapper(BaseBPlusTree* tr) : BaseBTree::PageWrapper(tr) { }
-
-        ~PageWrapper() { }
-
-    public:
-
-        virtual void splitChild(UShort iChild,
-                BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& rightChild) override;
-
-    };
-
-public:
-
     BaseBPlusTree(UShort order, UShort recSize, IComparator* comparator, std::iostream* stream)
             : BaseBTree(order, recSize, comparator, stream) { }
 
@@ -816,47 +799,43 @@ protected:
 
 public:
 
-    virtual Byte* search(const Byte* k, BaseBTree::PageWrapper& currentPage, UInt currentDepth) override;
+    virtual Byte* search(const Byte* k, PageWrapper& currentPage, UInt currentDepth) override;
 
     virtual int searchAll(const Byte* k, std::list<Byte*>& keys,
-            BaseBTree::PageWrapper& currentPage, UInt currentDepth) override;
+            PageWrapper& currentPage, UInt currentDepth) override;
 
 #ifdef BTREE_WITH_DELETION
 
-    virtual bool remove(const Byte* k, BaseBTree::PageWrapper& currentPage) override;
+    virtual bool remove(const Byte* k, PageWrapper& currentPage) override;
 
-    virtual int removeAll(const Byte* k, BaseBTree::PageWrapper& currentPage) override;
+    virtual int removeAll(const Byte* k, PageWrapper& currentPage) override;
 
-    virtual void mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& rightChild,
-            BaseBTree::PageWrapper& currentPage, UShort medianNum) override;
+    virtual void mergeChildren(PageWrapper& leftChild, PageWrapper& rightChild,
+            PageWrapper& currentPage, UShort medianNum) override;
 
 #endif
 
+public:
+
+    UInt getMaxLeafKeys() const { return _maxLeafKeys; }
+
+    UInt getMinLeafKeys() const { return _minLeafKeys; }
+
 protected:
 
+    virtual void splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild);
+
     virtual void setMinMaxKeysCounts() override;
+
+    virtual bool isFull(const PageWrapper& page) const override;
+
+    UInt _maxLeafKeys;
+
+    UInt _minLeafKeys;
 
 };
 
 class BaseBSTree : public BaseBTree {
-
-public:
-
-    class PageWrapper : public BaseBTree::PageWrapper {
-
-    public:
-
-        PageWrapper(BaseBSTree* tr) : BaseBTree::PageWrapper(tr) { }
-
-        ~PageWrapper() { }
-
-    public:
-
-        virtual void splitChild(UShort iChild) override;
-
-        virtual void insertNonFull(const Byte* k) override;
-
-    };
 
 public:
 
@@ -877,18 +856,18 @@ public:
 
 #ifdef BTREE_WITH_DELETION
 
-    virtual bool remove(const Byte* k, BaseBTree::PageWrapper& currentPage) override;
+    virtual bool remove(const Byte* k, PageWrapper& currentPage) override;
 
-    virtual int removeAll(const Byte* k, BaseBTree::PageWrapper& currentPage) override;
+    virtual int removeAll(const Byte* k, PageWrapper& currentPage) override;
 
-    virtual bool removeByKeyNum(UShort keyNum, BaseBTree::PageWrapper& currentPage) override;
+    virtual bool removeByKeyNum(UShort keyNum, PageWrapper& currentPage) override;
 
-    virtual bool prepareSubtree(UShort cursorNum, BaseBTree::PageWrapper& currentPage, BaseBTree::PageWrapper& child,
-            BaseBTree::PageWrapper& leftNeighbour, BaseBTree::PageWrapper& rightNeighbour) override;
+    virtual bool prepareSubtree(UShort cursorNum, PageWrapper& currentPage, PageWrapper& child,
+            PageWrapper& leftNeighbour, PageWrapper& rightNeighbour) override;
 
-    virtual const Byte* getAndRemoveMaxKey(BaseBTree::PageWrapper& pw) override;
+    virtual const Byte* getAndRemoveMaxKey(PageWrapper& pw) override;
 
-    virtual const Byte* getAndRemoveMinKey(BaseBTree::PageWrapper& pw) override;
+    virtual const Byte* getAndRemoveMinKey(PageWrapper& pw) override;
 
     virtual void mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& rightChild,
             BaseBTree::PageWrapper& currentPage, UShort medianNum) override;
@@ -896,6 +875,8 @@ public:
 #endif
 
 protected:
+
+    virtual void splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild);
 
     virtual void setMinMaxKeysCounts() override;
 

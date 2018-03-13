@@ -83,15 +83,17 @@ void BaseBTree::writePage(UInt pnum, const Byte* dst)
 
 }
 
-bool BaseBTree::checkKeysNumber(UShort keysNum, bool isRoot)
+bool BaseBTree::checkKeysNumber(UShort keysNum, bool isRoot) // TODO: fix.
 {
-    if (keysNum > getMaxKeys())
-        return false;
+//    if (keysNum > getMaxKeys())
+//        return false;
+//
+//    if (isRoot)
+//        return true;
+//
+//    return (keysNum >= getMinKeys());
 
-    if (isRoot)
-        return true;
-
-    return (keysNum >= getMinKeys());        
+    return true;
 }
 
 void BaseBTree::checkKeysNumberExc(UShort keysNum, bool isRoot)
@@ -227,6 +229,50 @@ int BaseBTree::searchAll(const Byte* k, std::list<Byte*>& keys, PageWrapper& cur
     }
 
     return amount;
+}
+
+void BaseBTree::splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild)
+{
+    if (node.isFull())
+        throw std::domain_error("A parent node is full, so its child can't be splitted");
+
+    if (iChild > node.getKeysNum())
+        throw std::invalid_argument("Cursor not exists");
+
+    if (leftChild.getPageNum() == 0)
+        leftChild.readPageFromChild(node, iChild);
+
+    // Allocating page for the right child which is new created child.
+    rightChild.allocPage(_minKeys, leftChild.isLeaf());
+
+    // Copying keys and cursors from the right half of the left child to the right child.
+    rightChild.copyKeys(rightChild.getKey(0), leftChild.getKey(_minKeys + 1), _minKeys);
+    if(!leftChild.isLeaf())
+        node.copyCursors(rightChild.getCursorPtr(0), leftChild.getCursorPtr(_minKeys + 1), _minKeys + 1);
+
+    // Increasing number of keys num in the parent node for inserting median.
+    UShort keysNum = node.getKeysNum() + 1;
+    node.setKeyNum(keysNum);
+
+    // Shifting coursors in the parent to the right.
+    for(int j = keysNum - 1; j > iChild; --j)
+        node.copyCursors(node.getCursorPtr(j + 1), node.getCursorPtr(j), 1);
+
+    // Setting coursor in the parent to the right child.
+    node.setCursor(iChild + 1, rightChild.getPageNum());
+
+    // Shifting coursors in the parent to the right.
+    for(int j = keysNum - 2; j >= iChild; --j)
+        node.copyKey(node.getKey(j + 1), node.getKey(j));
+
+    // Moving median to the parent.
+    node.copyKey(node.getKey(iChild), leftChild.getKey(_minKeys));
+    leftChild.setKeyNum(_minKeys);
+
+    // Writing the pages to the disk.
+    leftChild.writePage();
+    rightChild.writePage();
+    node.writePage();
 }
 
 #ifdef BTREE_WITH_DELETION
@@ -774,6 +820,11 @@ void BaseBTree::loadTree()
 
 }
 
+bool BaseBTree::isFull(const PageWrapper& page) const
+{
+    return page.getKeysNum() == getMaxKeys();
+}
+
 void BaseBTree::loadRootPage()
 {
     if (getRootPageNum() == 0)
@@ -870,7 +921,7 @@ void BaseBTree::setOrder(UShort order, UShort recSize)
 
     _keysSize = _recSize * _maxKeys;
     _cursorsOfs = _keysSize + KEYS_OFS;
-    _nodePageSize = _cursorsOfs + CURSOR_SZ * (2 * order);
+    _nodePageSize = _cursorsOfs + CURSOR_SZ * (_maxKeys + 1);
 
     reallocWorkPages();
 }
@@ -957,15 +1008,15 @@ void BaseBTree::PageWrapper::setLeaf(bool isLeaf)
 bool BaseBTree::PageWrapper::isLeaf() const
 {
     UShort info = *((UShort*)&_data[0]);
-
-    return (info & LEAF_NODE_MASK) != 0;
+    bool isLeaf = (info & LEAF_NODE_MASK) != 0;
+    return isLeaf;
 }
 
 UShort BaseBTree::PageWrapper::getKeysNum() const
 {
     UShort info = *((UShort*)&_data[0]);
-
-    return (info & ~LEAF_NODE_MASK);
+    UShort keysNum = (info & ~LEAF_NODE_MASK);
+    return keysNum;
 }
 
 Byte* BaseBTree::PageWrapper::getKey(UShort num)
@@ -974,7 +1025,8 @@ Byte* BaseBTree::PageWrapper::getKey(UShort num)
     if (kofst == -1)
         return nullptr;
 
-    return (_data + kofst);
+    Byte* key = _data + kofst;
+    return key;
 }
 
 const Byte* BaseBTree::PageWrapper::getKey(UShort num) const
@@ -983,7 +1035,8 @@ const Byte* BaseBTree::PageWrapper::getKey(UShort num) const
     if (kofst == -1)
         return nullptr;
 
-    return (_data + kofst);
+    const Byte* key = _data + kofst;
+    return key;
 }
 
 void BaseBTree::PageWrapper::copyKey(Byte* dst, const Byte* src)
@@ -1093,51 +1146,7 @@ void BaseBTree::PageWrapper::splitChild(UShort iChild)
 {
     PageWrapper leftChild(_tree);
     PageWrapper rightChild(_tree);
-    splitChild(iChild, leftChild, rightChild);
-}
-
-void BaseBTree::PageWrapper::splitChild(UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild)
-{
-    if (isFull())
-        throw std::domain_error("A parent node is full, so its child can't be splitted");
-
-    if (iChild > getKeysNum())
-        throw std::invalid_argument("Cursor not exists");
-
-    if (leftChild.getPageNum() == 0)
-        leftChild.readPageFromChild(*this, iChild);
-
-    // Allocating page for the right child which is new created child.
-    rightChild.allocPage(_tree->_minKeys, leftChild.isLeaf());
-
-    // Copying keys and cursors from the right half of the left child to the right child.
-    rightChild.copyKeys(rightChild.getKey(0), leftChild.getKey(_tree->_minKeys + 1), _tree->_minKeys);
-    if(!leftChild.isLeaf())
-        copyCursors(rightChild.getCursorPtr(0), leftChild.getCursorPtr(_tree->_minKeys + 1), _tree->_minKeys + 1);
-
-    // Increasing number of keys num in the parent node for inserting median.
-    UShort keysNum = getKeysNum() + 1;
-    setKeyNum(keysNum);
-
-    // Shifting coursors in the parent to the right.
-    for(int j = keysNum - 1; j > iChild; --j)
-        copyCursors(getCursorPtr(j + 1), getCursorPtr(j), 1);
-
-    // Setting coursor in the parent to the right child.
-    setCursor(iChild + 1, rightChild.getPageNum());
-
-    // Shifting coursors in the parent to the right.
-    for(int j = keysNum - 2; j >= iChild; --j)
-        copyKey(getKey(j + 1), getKey(j));
-
-    // Moving median to the parent.
-    copyKey(getKey(iChild), leftChild.getKey(_tree->_minKeys));
-    leftChild.setKeyNum(_tree->_minKeys);
-
-    // Writing the pages to the disk.
-    leftChild.writePage();
-    rightChild.writePage();
-    writePage();
+    _tree->splitChild(*this, iChild, leftChild, rightChild);
 }
 
 void BaseBTree::PageWrapper::insertNonFull(const Byte* k)
@@ -1184,7 +1193,7 @@ void BaseBTree::PageWrapper::insertNonFull(const Byte* k)
         if(child.isFull())
         {
             PageWrapper newChild(_tree);
-            splitChild(i, child, newChild);
+            _tree->splitChild(*this, i, child, newChild);
             if(c->compare(getKey(i), k, _tree->_recSize))
                 newChild.insertNonFull(k);
             else
@@ -1195,49 +1204,49 @@ void BaseBTree::PageWrapper::insertNonFull(const Byte* k)
     }
 }
 
-void BaseBPlusTree::PageWrapper::splitChild(UShort iChild, BaseBTree::PageWrapper& leftChild,
-        BaseBTree::PageWrapper& rightChild)
+void BaseBPlusTree::splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild)
 {
-    if (isFull())
+    if (node.isFull())
         throw std::domain_error("A parent node is full, so its child can't be splitted");
 
-    if (iChild > getKeysNum())
+    if (iChild > node.getKeysNum())
         throw std::invalid_argument("Cursor not exists");
 
     if (leftChild.getPageNum() == 0)
-        leftChild.readPageFromChild(*this, iChild);
+        leftChild.readPageFromChild(node, iChild);
+
+    if (!leftChild.isLeaf())
+        BaseBTree::splitChild(node, iChild, leftChild, rightChild);
 
     // Allocating page for the right child which is new created child.
-    rightChild.allocPage(_tree->getMinKeys(), leftChild.isLeaf());
+    rightChild.allocPage(getMinLeafKeys(), leftChild.isLeaf());
 
     // Copying keys and cursors from the right half of the left child to the right child.
-    rightChild.copyKeys(rightChild.getKey(0), leftChild.getKey(_tree->getMinKeys() + 1), _tree->getMinKeys());
-    if(!leftChild.isLeaf())
-        copyCursors(rightChild.getCursorPtr(0),
-                leftChild.getCursorPtr(_tree->getMinKeys() + 1), _tree->getMinKeys() + 1);
+    rightChild.copyKeys(rightChild.getKey(0), leftChild.getKey(getMinLeafKeys()), getMinLeafKeys());
 
     // Increasing number of keys num in the parent node for inserting median.
-    UShort keysNum = getKeysNum() + 1;
-    setKeyNum(keysNum);
+    UShort keysNum = node.getKeysNum() + 1;
+    node.setKeyNum(keysNum);
 
     // Shifting coursors in the parent to the right.
     for(int j = keysNum - 1; j > iChild; --j)
-        copyCursors(getCursorPtr(j + 1), getCursorPtr(j), 1);
+        node.copyCursors(node.getCursorPtr(j + 1), node.getCursorPtr(j), 1);
 
     // Setting coursor in the parent to the right child.
-    setCursor(iChild + 1, rightChild.getPageNum());
+    node.setCursor(iChild + 1, rightChild.getPageNum());
 
     // Shifting coursors in the parent to the right.
     for(int j = keysNum - 2; j >= iChild; --j)
-        copyKey(getKey(j + 1), getKey(j));
+        node.copyKey(node.getKey(j + 1), node.getKey(j));
 
-    // Moving median to the parent.
-    copyKey(getKey(iChild), leftChild.getKey(_tree->getMinKeys()));
+    // Copying median to the parent.
+    node.copyKey(node.getKey(iChild), leftChild.getKey(getMinLeafKeys() - 1));
+    leftChild.setKeyNum(getMinLeafKeys());
 
     // Writing the pages to the disk.
     leftChild.writePage();
     rightChild.writePage();
-    writePage();
+    node.writePage();
 }
 
 Byte* BaseBPlusTree::search(const Byte* k, BaseBTree::PageWrapper& currentPage, UInt currentDepth)
@@ -1427,13 +1436,15 @@ int BaseBPlusTree::removeAll(const Byte* k, BaseBTree::PageWrapper& currentPage)
 void BaseBPlusTree::mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& rightChild,
         BaseBTree::PageWrapper& currentPage, UShort medianNum)
 {
+    if(!leftChild.isLeaf())
+        BaseBTree::mergeChildren(leftChild, rightChild, currentPage, medianNum);
+
     UShort keysNum = currentPage.getKeysNum();
 
-    leftChild.setKeyNum(_maxKeys);
+    leftChild.setKeyNum(getMaxLeafKeys());
 
-    // Moving keys and cursors from the right child to the left child.
-    leftChild.copyKeys(leftChild.getKey(_minKeys + 1), rightChild.getKey(0), _minKeys);
-    leftChild.copyCursors(leftChild.getCursorPtr(_minKeys + 1), rightChild.getCursorPtr(0), _minKeys + 1);
+    // Moving keys from the right child to the left child.
+    leftChild.copyKeys(leftChild.getKey(getMinLeafKeys()), rightChild.getKey(0), getMinLeafKeys());
 
     // Shifting keys and cursors in the current page to the left, after removing the median from the current page.
     for(int j = medianNum; j < keysNum - 1; ++j)
@@ -1474,8 +1485,14 @@ void BaseBPlusTree::mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::
 
 void BaseBPlusTree::setMinMaxKeysCounts()
 {
-    _minKeys = _order;
-    _maxKeys = 2 * _order;
+    BaseBTree::setMinMaxKeysCounts();
+    _minLeafKeys = _minKeys + 1;
+    _maxLeafKeys = _maxKeys + 1;
+}
+
+bool BaseBPlusTree::isFull(const PageWrapper& page) const
+{
+    return (!page.isLeaf() && BaseBTree::isFull(page)) || (page.isLeaf() && page.getKeysNum() == getMaxLeafKeys());
 }
 
 //==============================================================================
