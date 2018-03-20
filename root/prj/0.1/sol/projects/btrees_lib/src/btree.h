@@ -660,9 +660,7 @@ protected:
     void setRootPageNum(UInt pnum, bool writeFlag = true);
 
     /** \brief Sets the tree's order and recalculates the associated values. */
-    void setOrder(UShort order, UShort recSize);
-
-    virtual void setMinMaxKeysCounts();
+    virtual void setOrder(UShort order, UShort recSize);
 
     /** \brief Reallocates the memory for the working pages. */
     void reallocWorkPages();
@@ -825,7 +823,7 @@ protected:
 
     virtual void splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild);
 
-    virtual void setMinMaxKeysCounts() override;
+    virtual void setOrder(UShort order, UShort recSize) override;
 
     virtual bool isFull(const PageWrapper& page) const override;
 
@@ -878,7 +876,7 @@ protected:
 
     virtual void splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild);
 
-    virtual void setMinMaxKeysCounts() override;
+    virtual void setOrder(UShort order, UShort recSize) override;
 
 };
 
