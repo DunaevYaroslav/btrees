@@ -1374,6 +1374,7 @@ bool BaseBPlusTree::remove(const Byte* k, BaseBTree::PageWrapper& currentPage)
                     nextPage.setKeyNum(getMinLeafKeys() + 1);
 
                     currentPage.copyKey(nextPage.getKey(getMinLeafKeys()), rightSibling.getKey(0));
+                    currentPage.copyKey(currentPage.getKey(i), rightSibling.getKey(0));
                     int rightSiblingKeysNum = rightSibling.getKeysNum();
                     for (int j = 0; j < rightSiblingKeysNum - 1; ++j)
                         currentPage.copyKey(rightSibling.getKey(j), rightSibling.getKey(j + 1));
@@ -1404,83 +1405,78 @@ bool BaseBPlusTree::remove(const Byte* k, BaseBTree::PageWrapper& currentPage)
 
 int BaseBPlusTree::removeAll(const Byte* k, BaseBTree::PageWrapper& currentPage)
 {
-    if(currentPage.getKeysNum() == 0)
-        return 0;
+//    if (currentPage.getKeysNum() == 0)
+//        return 0;
+//
+//    int amount = 0;
+//    int i;
+//    UShort keysNum = currentPage.getKeysNum();
+//    bool isLeaf = currentPage.isLeaf();
+//    bool isRoot = currentPage.isRoot();
+//
+//    PageWrapper child(this);
+//    PageWrapper leftNeighbour(this);
+//    PageWrapper rightNeighbour(this);
+//
+//    for (i = 0; i < keysNum && _comparator->compare(currentPage.getKey(i), k, _recSize); ++i) ;
+//
+//    int first = i;
+//
+//    for ( ; i <= keysNum && (i == first ||
+//            (i < keysNum && _comparator->isEqual(k, currentPage.getKey(i), _recSize)) ||
+//            (i > first && _comparator->isEqual(k, currentPage.getKey(i - 1), _recSize))); ++i)
+//    {
+//        if (currentPage.isLeaf())
+//        {
+//            if (i < keysNum && _comparator->isEqual(k, currentPage.getKey(i), _recSize) &&
+//                    (currentPage.isRoot() || currentPage.getKeysNum() > getMinLeafKeys()))
+//            {
+//                remove(k, currentPage);
+//                ++amount;
+//                --i;
+//            }
+//            else
+//                return amount;
+//        }
+//        else
+//        {
+//            PageWrapper nextPage(this);
+//            nextPage.readPageFromChild(currentPage, i);
+//            int nextPageAmount = 0;
+//            do
+//            {
+//                nextPageAmount = removeAll(k, nextPage);
+//                amount += nextPageAmount;
+//                if (nextPage.isLeaf() && nextPage.getKeysNum() == getMinLeafKeys())
+//                {
+//                    remove(k, currentPage);
+//
+//                    if (isRoot)
+//                    {
+//                        if (currentPage.getData() != _rootPage.getData())
+//                            loadRootPage();
+//
+//                        continue;
+//                    }
+//
+//                    break;
+//                }
+//            }
+//            while (nextPageAmount != 0);
+//        }
+//    }
+//
+//    if(isRoot && currentPage.getData() != _rootPage.getData())
+//        loadRootPage();
+//
+//    return amount;
+
+    // TODO: make effectively.
 
     int amount = 0;
-    int i;
-    UShort keysNum = currentPage.getKeysNum();
-    bool isLeaf = currentPage.isLeaf();
-    bool isRoot = currentPage.isRoot();
 
-    PageWrapper child(this);
-    PageWrapper leftNeighbour(this);
-    PageWrapper rightNeighbour(this);
-
-    for(i = 0; i < keysNum && _comparator->compare(currentPage.getKey(i), k, _recSize); ++i) ;
-
-    int first = i;
-
-    for( ; i <= keysNum && (i == first ||
-                            (i < keysNum && _comparator->isEqual(k, currentPage.getKey(i), _recSize)) ||
-                            (i > first && _comparator->isEqual(k, currentPage.getKey(i - 1), _recSize))); ++i)
-    {
-        if(i < keysNum && _comparator->isEqual(k, currentPage.getKey(i), _recSize)) // Cases 1 and 2: if the key has been found, removes it recursively.
-        {
-            removeByKeyNum(i, currentPage);
-
-            if(isRoot && !currentPage.isRoot())
-            {
-                currentPage.readPage(_rootPageNum);
-                keysNum = currentPage.getKeysNum();
-                i = -1;
-                continue;
-            }
-
-            ++amount;
-
-            keysNum = currentPage.getKeysNum();
-            --i;
-
-            if(!currentPage.isRoot() && keysNum <= _minKeys)
-                return amount;
-
-            continue;
-        }
-
-        if(!isLeaf) // Case 3.
-        {
-            if(prepareSubtree(i, currentPage, child, leftNeighbour, rightNeighbour))
-            {
-                amount += removeAll(k, leftNeighbour);
-                --i;
-                if (leftNeighbour.getKeysNum() <= _minKeys)
-                    --i;
-            }
-            else
-            {
-                amount += removeAll(k, child);
-                if(child.getKeysNum() <= _minKeys)
-                    --i;
-            }
-
-            if(isRoot && !currentPage.isRoot() || currentPage.getKeysNum() > keysNum)
-            {
-                currentPage.readPage(_rootPageNum);
-                i = -1;
-                isLeaf = true;
-            }
-
-            if(currentPage.getKeysNum() < keysNum)
-                --i;
-
-            keysNum = currentPage.getKeysNum();
-        }
-
-    }
-
-    if(isRoot && currentPage.getData() != _rootPage.getData())
-        loadRootPage();
+    while (BaseBTree::remove(k))
+        ++amount;
 
     return amount;
 }
@@ -1583,7 +1579,7 @@ FileBaseBTree::FileBaseBTree(BaseBTree::TreeType treeType)
 {
     switch (treeType)
     {
-        case BaseBTree::TreeType::B_TREE: _tree = new BaseBTree(0, 0, nullptr, nullptr);
+        case BaseBTree::TreeType::B_TREE: _tree = new BaseBTree(0, 0, nullptr, nullptr); break;
         case BaseBTree::TreeType::B_PLUS_TREE: _tree = new BaseBPlusTree(0, 0, nullptr, nullptr); break;
 //        case BaseBTree::TreeType::B_STAR_TREE: _tree = new BaseBSTree(0, 0, nullptr, nullptr); break;
     }
