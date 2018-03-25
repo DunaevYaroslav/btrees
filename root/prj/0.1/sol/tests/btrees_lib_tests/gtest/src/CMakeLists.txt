@@ -1,6 +1,7 @@
 add_executable(btrees_lib_tests
     individual.h
     btree_test.cpp
+    bplustree_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../projects/btrees_lib/src/utils.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../projects/btrees_lib/src/btree.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../projects/btrees_lib/src/btree.cpp
