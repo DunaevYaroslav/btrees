@@ -16,7 +16,7 @@
 #define BTREE_TESTS_INDIVIDUAL_H_
 
 /** \brief Путь к каталогу с рабочими тестовыми файлами. */
-static const char* TEST_FILES_PATH = "btrees\\";
+static const char* TEST_FILES_PATH = "..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\root\\prj\\0.1\\sol\\tests\\btrees_lib_tests\\gtest\\testfiles\\";
 
 
 #endif // BTREE_TESTS_INDIVIDUAL_H_
