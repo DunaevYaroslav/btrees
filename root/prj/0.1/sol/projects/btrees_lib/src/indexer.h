@@ -102,13 +102,17 @@ public:
      *  \param order The order for creating the B-tree.
      *  \param treeFileName Name of the file for storing the tree.
      */
-    void create(UShort order, const std::string& treeFileName);
+    void create(BaseBTree::TreeType treeType, UShort order, const std::string& treeFileName);
+
+    void create(UShort order, const std::string& treeFileName) { create(BaseBTree::TreeType::B_TREE, order, treeFileName); }
 
     /** \brief Opens the stored B-tree.
      *
      *  \param treeFileName Name of the file where the tree is stored.
      */
-    void open(const std::string& treeFileName);
+    void open(BaseBTree::TreeType treeType, const std::string& treeFileName);
+
+    void open(const std::string& treeFileName) { open(BaseBTree::TreeType::B_TREE, treeFileName); }
 
     /** \brief Closes the tree and clears its memory. */
     void close();

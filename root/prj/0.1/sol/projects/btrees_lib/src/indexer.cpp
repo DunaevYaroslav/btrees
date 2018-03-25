@@ -98,22 +98,22 @@ Indexer::~Indexer()
     close();
 }
 
-void Indexer::create(UShort order, const std::string& treeFileName)
+void Indexer::create(BaseBTree::TreeType treeType, UShort order, const std::string& treeFileName)
 {
     if(_bt != nullptr)
         delete _bt;
 
-    _bt = new FileBaseBTree(order, sizeof(Key), &_comparator, treeFileName);
+    _bt = new FileBaseBTree(treeType, order, sizeof(Key), &_comparator, treeFileName);
 
     lastFileName = "";
 }
 
-void Indexer::open(const std::string& treeFileName)
+void Indexer::open(BaseBTree::TreeType treeType, const std::string& treeFileName)
 {
     if(_bt != nullptr)
         delete _bt;
 
-    _bt = new FileBaseBTree(treeFileName, &_comparator);
+    _bt = new FileBaseBTree(treeType, treeFileName, &_comparator);
 
     lastFileName = "";
 }

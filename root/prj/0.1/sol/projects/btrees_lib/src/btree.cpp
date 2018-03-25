@@ -1211,7 +1211,10 @@ void BaseBPlusTree::splitChild(PageWrapper& node, UShort iChild, PageWrapper& le
         leftChild.readPageFromChild(node, iChild);
 
     if (!leftChild.isLeaf())
+    {
         BaseBTree::splitChild(node, iChild, leftChild, rightChild);
+        return;
+    }
 
     // Allocating page for the right child which is new created child.
     rightChild.allocPage(getMinLeafKeys(), leftChild.isLeaf());
