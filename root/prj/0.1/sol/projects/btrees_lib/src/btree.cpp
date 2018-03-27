@@ -1542,8 +1542,8 @@ void BaseBPlusTree::setOrder(UShort order, UShort recSize)
     _minLeafKeys = _minKeys + 1;
     _maxLeafKeys = _maxKeys + 1;
 
-    if (_maxKeys > MAX_KEYS_NUM)
-        throw std::invalid_argument("For a given B-tree order, there is an excess of the maximum number of keys");
+    if (_maxLeafKeys > MAX_KEYS_NUM)
+        throw std::invalid_argument("For a given B+-tree order, there is an excess of the maximum number of keys");
 
     _keysSize = _recSize * _maxLeafKeys;
     _cursorsOfs = _keysSize + KEYS_OFS;
@@ -1555,6 +1555,45 @@ void BaseBPlusTree::setOrder(UShort order, UShort recSize)
 bool BaseBPlusTree::isFull(const PageWrapper& page) const
 {
     return (!page.isLeaf() && BaseBTree::isFull(page)) || (page.isLeaf() && page.getKeysNum() == getMaxLeafKeys());
+}
+
+//==============================================================================
+// class BaseBStarTree
+//==============================================================================
+
+void BaseBStarTree::insert(const Byte* k)
+{
+
+}
+
+void BaseBStarTree::splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild)
+{
+
+}
+
+void BaseBStarTree::setOrder(UShort order, UShort recSize)
+{
+    _order = order;
+    _recSize = recSize;
+
+    _minKeys = (2 * _order - 2) / 3;
+    _maxKeys = _order - 1;
+
+    _maxRootKeys = 2 * ((2 * _order - 2) / 3);
+
+    UInt maxPossibleNodeKeys = std::max(_maxKeys, _maxRootKeys);
+
+    if (maxPossibleNodeKeys > MAX_KEYS_NUM)
+        throw std::invalid_argument("For a given B*-tree order, there is an excess of the maximum number of keys");
+
+    _keysSize = _recSize * maxPossibleNodeKeys;
+    _cursorsOfs = _keysSize + KEYS_OFS;
+    _nodePageSize = _cursorsOfs + CURSOR_SZ * (maxPossibleNodeKeys + 1);
+}
+
+bool BaseBStarTree::isFull(const PageWrapper& page) const
+{
+    return (!page.isRoot() && BaseBTree::isFull(page)) || (page.isRoot() && page.getKeysNum() == getMaxRootKeys());
 }
 
 //==============================================================================
@@ -1584,7 +1623,7 @@ FileBaseBTree::FileBaseBTree(BaseBTree::TreeType treeType)
     {
         case BaseBTree::TreeType::B_TREE: _tree = new BaseBTree(0, 0, nullptr, nullptr); break;
         case BaseBTree::TreeType::B_PLUS_TREE: _tree = new BaseBPlusTree(0, 0, nullptr, nullptr); break;
-//        case BaseBTree::TreeType::B_STAR_TREE: _tree = new BaseBSTree(0, 0, nullptr, nullptr); break;
+//        case BaseBTree::TreeType::B_STAR_TREE: _tree = new BaseBStarTree(0, 0, nullptr, nullptr); break;
     }
 
     isComposition = true;

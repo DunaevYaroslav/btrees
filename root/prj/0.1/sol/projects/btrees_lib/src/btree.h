@@ -316,7 +316,7 @@ public:
          *  If node is fulfilled, throws an exception.
          *  If comparator is not defined for the tree, throws an exception.
          */
-        virtual void insertNonFull(const Byte* k);
+        void insertNonFull(const Byte* k);
 
     protected:
 
@@ -428,7 +428,7 @@ public:
     UInt allocNewRootPage(PageWrapper& pw);
 
     /** \brief Inserts the key k into the tree using the ordering. */
-    void insert(const Byte* k);
+    virtual void insert(const Byte* k);
     
     /** \brief For the given key \c k finds the first its occurrence in the tree.
      *  If the key is found, returns the pointer to the appropriate bytes array, otherwise returns nullptr.
@@ -821,11 +821,13 @@ public:
 
 protected:
 
-    virtual void splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild);
+    virtual void splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild) override;
 
     virtual void setOrder(UShort order, UShort recSize) override;
 
     virtual bool isFull(const PageWrapper& page) const override;
+
+protected:
 
     UInt _maxLeafKeys;
 
@@ -833,24 +835,26 @@ protected:
 
 };
 
-class BaseBSTree : public BaseBTree {
+class BaseBStarTree : public BaseBTree {
 
 public:
 
-    BaseBSTree(UShort order, UShort recSize, IComparator* comparator, std::iostream* stream)
+    BaseBStarTree(UShort order, UShort recSize, IComparator* comparator, std::iostream* stream)
             : BaseBTree(order, recSize, comparator, stream) { }
 
-    BaseBSTree(IComparator* comparator, std::iostream* stream) : BaseBTree(comparator, stream) { }
+    BaseBStarTree(IComparator* comparator, std::iostream* stream) : BaseBTree(comparator, stream) { }
 
-    ~BaseBSTree();
+    ~BaseBStarTree();
 
 protected:
 
-    BaseBSTree(const BaseBSTree&);
+    BaseBStarTree(const BaseBStarTree&);
 
-    BaseBSTree& operator=(BaseBSTree&);
+    BaseBStarTree& operator=(BaseBStarTree&);
 
 public:
+
+    virtual void insert(const Byte* k) override;
 
 #ifdef BTREE_WITH_DELETION
 
@@ -872,11 +876,21 @@ public:
 
 #endif
 
+public:
+
+    UInt getMaxRootKeys() const { return _maxRootKeys; }
+
 protected:
 
-    virtual void splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild);
+    virtual void splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild) override;
 
     virtual void setOrder(UShort order, UShort recSize) override;
+
+    virtual bool isFull(const PageWrapper& page) const override;
+
+protected:
+
+    UInt _maxRootKeys;
 
 };
 
