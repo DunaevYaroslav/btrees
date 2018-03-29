@@ -1692,14 +1692,14 @@ void BaseBStarTree::insertNonFull(const Byte* k, PageWrapper& currentNode)
                     {
                         for (int j = newRightSiblingKeysNum; j >= movedKeys; --j)
                             currentNode.copyCursors(rightSibling.getCursorPtr(j),
-                                                    rightSibling.getCursorPtr(j - movedKeys), 1);
+                                    rightSibling.getCursorPtr(j - movedKeys), 1);
                     }
 
-                    currentNode.copyKey(rightSibling.getKey(movedKeys), currentNode.getKey(i));
+                    currentNode.copyKey(rightSibling.getKey(movedKeys - 1), currentNode.getKey(i));
                     currentNode.copyKeys(rightSibling.getKey(0), child.getKey(childLeftKeys + 1), movedKeys - 1);
                     if (!isChildLeaf)
                         currentNode.copyCursors(rightSibling.getCursorPtr(0), child.getCursorPtr(childLeftKeys + 1),
-                                                movedKeys);
+                                movedKeys);
                     currentNode.copyKey(currentNode.getKey(i), child.getKey(childLeftKeys));
 
                     child.setKeyNum(childLeftKeys);

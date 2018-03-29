@@ -12,14 +12,14 @@
 
 using namespace xi;
 
-static const int ORDERS[] = { 2, 4, 6, 8, 10, 20, 30, 40, 50, 250, 450, 650, 850, 1050, 1250, 1450, 1650, 1850, 2050 };
+static const int ORDERS[] = { 4, 6, 8, 10, 20, 30, 40, 50, 250, 450, 650, 850, 1050, 1250, 1450, 1650, 1850, 2050 };
 
 static const int ORDERS_LENGTH = sizeof(ORDERS) / sizeof(int);
 
 /**
  * Represents some methods for testing.
  */
-class BPlusTreeBasedIndexTest : public ::testing::Test
+class BStarTreeBasedIndexTest : public ::testing::Test
 {
 
 public:
@@ -34,7 +34,7 @@ public:
     /**
      * Constructor. Sets the Russian locale.
      */
-    BPlusTreeBasedIndexTest() { setlocale(LC_ALL, "Russian"); }
+    BStarTreeBasedIndexTest() { setlocale(LC_ALL, "Russian"); }
 
 public:
 
@@ -85,7 +85,7 @@ private:
 
 };
 
-void BPlusTreeBasedIndexTest::testIndex(std::string fileName, std::string treeFileName,
+void BStarTreeBasedIndexTest::testIndex(std::string fileName, std::string treeFileName,
         std::string indexOutFileName, std::string linearOutFileName,
         std::wstring name, int expectedCount)
 {
@@ -97,7 +97,7 @@ void BPlusTreeBasedIndexTest::testIndex(std::string fileName, std::string treeFi
     linearOutFileName = TEST_FILES_PATH + linearOutFileName;
 
     xi::Indexer indexer;
-    indexer.create(BaseBTree::TreeType::B_PLUS_TREE, ORDER, treeFileName);
+    indexer.create(BaseBTree::TreeType::B_STAR_TREE, ORDER, treeFileName);
 
     std::cout << "Indexing..." << std::endl;
     clock_t begin = clock();
@@ -125,7 +125,7 @@ void BPlusTreeBasedIndexTest::testIndex(std::string fileName, std::string treeFi
     writeOccurrencesToFile(occurrences, linearOutFileName);
 }
 
-void BPlusTreeBasedIndexTest::testIndexWithDifferentParams(std::string fileName, std::string treeFileName,
+void BStarTreeBasedIndexTest::testIndexWithDifferentParams(std::string fileName, std::string treeFileName,
         std::string indexOutFileName, std::string outputCsvFileName, std::wstring name, int expectedCount)
 {
     std::cout << "File " << fileName << std::endl;
@@ -147,7 +147,7 @@ void BPlusTreeBasedIndexTest::testIndexWithDifferentParams(std::string fileName,
         std::cout << "Tree order " << ORDERS[i] << std::endl;
 
         xi::Indexer indexer;
-        indexer.create(BaseBTree::TreeType::B_PLUS_TREE, ORDERS[i], treeFileName);
+        indexer.create(BaseBTree::TreeType::B_STAR_TREE, ORDERS[i], treeFileName);
 
         std::cout << "Indexing..." << std::endl;
         clock_t begin = clock();
@@ -178,7 +178,7 @@ void BPlusTreeBasedIndexTest::testIndexWithDifferentParams(std::string fileName,
     outputCsvFile.close();
 }
 
-std::list<std::wstring> BPlusTreeBasedIndexTest::searchLinearly(std::wstring& name, std::string fileName)
+std::list<std::wstring> BStarTreeBasedIndexTest::searchLinearly(std::wstring& name, std::string fileName)
 {
     std::wifstream file(fileName);
 
@@ -203,7 +203,7 @@ std::list<std::wstring> BPlusTreeBasedIndexTest::searchLinearly(std::wstring& na
     return occurrences;
 }
 
-void BPlusTreeBasedIndexTest::writeOccurrencesToFile(std::list<std::wstring>& occurrences, std::string& fileName)
+void BStarTreeBasedIndexTest::writeOccurrencesToFile(std::list<std::wstring>& occurrences, std::string& fileName)
 {
     std::wofstream file(fileName);
 
@@ -221,41 +221,41 @@ void BPlusTreeBasedIndexTest::writeOccurrencesToFile(std::list<std::wstring>& oc
     std::cout << "File " << fileName << " has been successfully written." << std::endl;
 }
 
-double BPlusTreeBasedIndexTest::getTimeInSecs(clock_t begin, clock_t end)
+double BStarTreeBasedIndexTest::getTimeInSecs(clock_t begin, clock_t end)
 {
     return ((double)(end - begin)) / CLOCKS_PER_SEC;
 }
 
 
 
-TEST_F(BPlusTreeBasedIndexTest, IndexerTest1)
+TEST_F(BStarTreeBasedIndexTest, IndexerTest1)
 {
     testIndex("University_and_books.csv", "BTree_University_and_books.xibt",
               "Occurrences_index_University_and_books.txt", "Occurrences_linear_University_and_books.txt",
               L"Подбельский", 3);
 }
 
-TEST_F(BPlusTreeBasedIndexTest, IndexerTest2)
+TEST_F(BStarTreeBasedIndexTest, IndexerTest2)
 {
     testIndex("Hospital_log.csv", "BTree_Hospital_log.xibt",
               "Occurrences_index_Hospital_log.txt", "Occurrences_linear_Hospital_log.txt",
               L"1e consult poliklinisch", 1136);
 }
 
-TEST_F(BPlusTreeBasedIndexTest, IndexerWithDifferentParamsTest1)
+TEST_F(BStarTreeBasedIndexTest, IndexerWithDifferentParamsTest1)
 {
     testIndexWithDifferentParams(
             "University_and_books.csv", "BTree_University_and_books.xibt",
-            "Occurrences_index_University_and_books.txt", "Results_BPlusTree_University_and_books.csv",
+            "Occurrences_index_University_and_books.txt", "Results_BStarTree_University_and_books.csv",
             L"Подбельский", 3
     );
 }
 
-TEST_F(BPlusTreeBasedIndexTest, IndexerWithDifferentParamsTest2)
+TEST_F(BStarTreeBasedIndexTest, IndexerWithDifferentParamsTest2)
 {
     testIndexWithDifferentParams(
             "Hospital_log.csv", "BTree_Hospital_log.xibt",
-            "Occurrences_index_Hospital_log.txt", "Results_BPlusTree_Hospital_log.csv",
+            "Occurrences_index_Hospital_log.txt", "Results_BStarTree_Hospital_log.csv",
             L"1e consult poliklinisch", 1136
     );
 }
