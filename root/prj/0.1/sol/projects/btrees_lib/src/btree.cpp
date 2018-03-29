@@ -1885,13 +1885,13 @@ void BaseBStarTree::setOrder(UShort order, UShort recSize)
     _recSize = recSize;
 
     _minKeys = (2 * _order - 2) / 3;
-    _maxKeys = _order - 1;
+    _maxKeys = _order;
 
     _maxRootKeys = 2 * _minKeys;
 
-    _leftSplitProductKeys = (2 * _order - 2) / 3;
-    _middleSplitProductKeys = (2 * _order - 1) / 3;
-    _rightSplitProductKeys = 2 * _order / 3 - 1;
+    _leftSplitProductKeys = (2 * _order - 1) / 3;
+    _middleSplitProductKeys = 2 * _order / 3;
+    _rightSplitProductKeys = (2 * _order + 1) / 3;
 
     UInt maxPossibleNodeKeys = std::max(_maxKeys, _maxRootKeys);
 
