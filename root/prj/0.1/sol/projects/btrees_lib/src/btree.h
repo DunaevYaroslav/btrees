@@ -311,13 +311,6 @@ public:
          */
         virtual void splitChild(UShort iChild);
 
-        /** \brief Insert key k into the non-fulfilled node using the ordering.
-         *
-         *  If node is fulfilled, throws an exception.
-         *  If comparator is not defined for the tree, throws an exception.
-         */
-        void insertNonFull(const Byte* k);
-
     protected:
 
         PageWrapper(const PageWrapper&);
@@ -429,6 +422,13 @@ public:
 
     /** \brief Inserts the key k into the tree using the ordering. */
     virtual void insert(const Byte* k);
+
+    /** \brief Insert key k into the non-fulfilled node using the ordering.
+     *
+     *  If node is fulfilled, throws an exception.
+     *  If comparator is not defined for the tree, throws an exception.
+     */
+    virtual void insertNonFull(const Byte* k, PageWrapper& currentNode);
     
     /** \brief For the given key \c k finds the first its occurrence in the tree.
      *  If the key is found, returns the pointer to the appropriate bytes array, otherwise returns nullptr.
@@ -858,21 +858,21 @@ public:
 
 #ifdef BTREE_WITH_DELETION
 
-    virtual bool remove(const Byte* k, PageWrapper& currentPage) override;
-
-    virtual int removeAll(const Byte* k, PageWrapper& currentPage) override;
-
-    virtual bool removeByKeyNum(UShort keyNum, PageWrapper& currentPage) override;
-
-    virtual bool prepareSubtree(UShort cursorNum, PageWrapper& currentPage, PageWrapper& child,
-            PageWrapper& leftNeighbour, PageWrapper& rightNeighbour) override;
-
-    virtual const Byte* getAndRemoveMaxKey(PageWrapper& pw) override;
-
-    virtual const Byte* getAndRemoveMinKey(PageWrapper& pw) override;
-
-    virtual void mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& rightChild,
-            BaseBTree::PageWrapper& currentPage, UShort medianNum) override;
+//    virtual bool remove(const Byte* k, PageWrapper& currentPage) override;
+//
+//    virtual int removeAll(const Byte* k, PageWrapper& currentPage) override;
+//
+//    virtual bool removeByKeyNum(UShort keyNum, PageWrapper& currentPage) override;
+//
+//    virtual bool prepareSubtree(UShort cursorNum, PageWrapper& currentPage, PageWrapper& child,
+//            PageWrapper& leftNeighbour, PageWrapper& rightNeighbour) override;
+//
+//    virtual const Byte* getAndRemoveMaxKey(PageWrapper& pw) override;
+//
+//    virtual const Byte* getAndRemoveMinKey(PageWrapper& pw) override;
+//
+//    virtual void mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& rightChild,
+//            BaseBTree::PageWrapper& currentPage, UShort medianNum) override;
 
 #endif
 
@@ -880,9 +880,19 @@ public:
 
     UInt getMaxRootKeys() const { return _maxRootKeys; }
 
+    UInt getLeftSplitProductKeys() const { return _leftSplitProductKeys; }
+
+    UInt getMiddleSplitProductKeys() const { return _middleSplitProductKeys; }
+
+    UInt getRightSplitProductKeys() const { return _rightSplitProductKeys; }
+
 protected:
 
+    virtual void insertNonFull(const Byte* k, PageWrapper& currentNode) override;
+
     virtual void splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild) override;
+
+    void splitChildren(PageWrapper& node, UShort iLeft, PageWrapper& left, PageWrapper& middle, PageWrapper& right);
 
     virtual void setOrder(UShort order, UShort recSize) override;
 
@@ -891,6 +901,12 @@ protected:
 protected:
 
     UInt _maxRootKeys;
+
+    UInt _leftSplitProductKeys;
+
+    UInt _middleSplitProductKeys;
+
+    UInt _rightSplitProductKeys;
 
 };
 

@@ -145,7 +145,62 @@ void BaseBTree::insert(const Byte* k)
         _rootPage.setAsRoot(true);
         _rootPage.splitChild(0);
     }
-    _rootPage.insertNonFull(k);
+    insertNonFull(k, _rootPage);
+}
+
+void BaseBTree::insertNonFull(const Byte* k, PageWrapper& currentNode)
+{
+    if (currentNode.isFull())
+        throw std::domain_error("Node is full. Can't insert");
+
+    IComparator* c = getComparator();
+    if (!c)
+        throw std::runtime_error("Comparator not set. Can't insert");
+
+    // Getting the current pages' keys number (it will be used several times in this method).
+    UShort keysNum = currentNode.getKeysNum();
+
+    int i = keysNum - 1;
+
+    // If the current page is leaf, we can simply insert the key into the page.
+    if(currentNode.isLeaf())
+    {
+        // Increasing number of keys in the node for inserting the key.
+        currentNode.setKeyNum(keysNum + 1);
+
+        // Shifting keys in the node to the right.
+        for( ; i >= 0 && c->compare(k, currentNode.getKey(i), getRecSize()); --i)
+            currentNode.copyKey(currentNode.getKey(i + 1), currentNode.getKey(i));
+
+        // Inserting the key to the node.
+        currentNode.copyKey(currentNode.getKey(i + 1), k);
+
+        // Writing the page to the disk.
+        currentNode.writePage();
+    }
+    else // If the current page is not leaf, we should check if we should split one of the children and recursively call the method on the child.
+    {
+        // Searching necessary child.
+        for( ; i >= 0 && c->compare(k, currentNode.getKey(i), getRecSize()); --i) ;
+        ++i;
+
+        // Reading the child from disk.
+        PageWrapper child(this);
+        child.readPageFromChild(currentNode, i);
+
+        // If the child is full, we should split it and recursively call the method on the child or on the new created child.
+        if(child.isFull())
+        {
+            PageWrapper newChild(this);
+            splitChild(currentNode, i, child, newChild);
+            if(c->compare(currentNode.getKey(i), k, getRecSize()))
+                insertNonFull(k, newChild);
+            else
+                insertNonFull(k, child);
+        }
+        else // If the child is not full, we can simply recursively call the method on it.
+            insertNonFull(k, child);
+    }
 }
 
 Byte* BaseBTree::search(const Byte* k)
@@ -1144,61 +1199,6 @@ void BaseBTree::PageWrapper::splitChild(UShort iChild)
     _tree->splitChild(*this, iChild, leftChild, rightChild);
 }
 
-void BaseBTree::PageWrapper::insertNonFull(const Byte* k)
-{
-    if (isFull())
-        throw std::domain_error("Node is full. Can't insert");
-
-    IComparator* c = _tree->getComparator();
-    if (!c)
-        throw std::runtime_error("Comparator not set. Can't insert");
-
-    // Getting the current pages' keys number (it will be used several times in this method).
-    UShort keysNum = getKeysNum();
-
-    int i = keysNum - 1;
-
-    // If the current page is leaf, we can simply insert the key into the page.
-    if(isLeaf())
-    {
-        // Increasing number of keys in the node for inserting the key.
-        setKeyNum(keysNum + 1);
-
-        // Shifting keys in the node to the right.
-        for( ; i >= 0 && c->compare(k, getKey(i), _tree->_recSize); --i)
-            copyKey(getKey(i + 1), getKey(i));
-
-        // Inserting the key to the node.
-        copyKey(getKey(i + 1), k);
-
-        // Writing the page to the disk.
-        writePage();
-    }
-    else // If the current page is not leaf, we should check if we should split one of the children and recursively call the method on the child.
-    {
-        // Searching necessary child.
-        for( ; i >= 0 && c->compare(k, getKey(i), _tree->_recSize); --i) ;
-        ++i;
-
-        // Reading the child from disk.
-        PageWrapper child(_tree);
-        child.readPageFromChild(*this, i);
-
-        // If the child is full, we should split it and recursively call the method on the child or on the new created child.
-        if(child.isFull())
-        {
-            PageWrapper newChild(_tree);
-            _tree->splitChild(*this, i, child, newChild);
-            if(c->compare(getKey(i), k, _tree->_recSize))
-                newChild.insertNonFull(k);
-            else
-                child.insertNonFull(k);
-        }
-        else // If the child is not full, we can simply recursively call the method on it.
-            child.insertNonFull(k);
-    }
-}
-
 void BaseBPlusTree::splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild)
 {
     if (node.isFull())
@@ -1563,12 +1563,320 @@ bool BaseBPlusTree::isFull(const PageWrapper& page) const
 
 void BaseBStarTree::insert(const Byte* k)
 {
+    if(_rootPage.isFull())
+    {
+        UInt prevRootPageNum = _rootPageNum;
+        _rootPage.allocNewRootPage();
+        _rootPage.setCursor(0, prevRootPageNum);
+        _rootPage.setAsRoot(true);
+        _rootPage.splitChild(0);
+    }
+    insertNonFull(k, _rootPage);
+}
 
+void BaseBStarTree::insertNonFull(const Byte* k, PageWrapper& currentNode)
+{
+    if (currentNode.isFull())
+        throw std::domain_error("Node is full. Can't insert");
+
+    IComparator* c = getComparator();
+    if (!c)
+        throw std::runtime_error("Comparator not set. Can't insert");
+
+    // Getting the current pages' keys number (it will be used several times in this method).
+    UShort keysNum = currentNode.getKeysNum();
+
+    int i = keysNum - 1;
+
+    // If the current page is leaf, we can simply insert the key into the page.
+    if(currentNode.isLeaf())
+    {
+        // Increasing number of keys in the node for inserting the key.
+        currentNode.setKeyNum(keysNum + 1);
+
+        // Shifting keys in the node to the right.
+        for( ; i >= 0 && c->compare(k, currentNode.getKey(i), getRecSize()); --i)
+            currentNode.copyKey(currentNode.getKey(i + 1), currentNode.getKey(i));
+
+        // Inserting the key to the node.
+        currentNode.copyKey(currentNode.getKey(i + 1), k);
+
+        // Writing the page to the disk.
+        currentNode.writePage();
+    }
+    else
+    {
+        // Searching necessary child.
+        for( ; i >= 0 && c->compare(k, currentNode.getKey(i), getRecSize()); --i) ;
+        ++i;
+
+        // Reading the child from disk.
+        PageWrapper child(this);
+        child.readPageFromChild(currentNode, i);
+
+        if(child.isFull())
+        {
+            UShort childKeysNum = child.getKeysNum();
+            bool isChildLeaf = child.isLeaf();
+
+            PageWrapper leftSibling(this);
+            PageWrapper rightSibling(this);
+
+            if (i > 0)
+            {
+                leftSibling.readPageFromChild(currentNode, i - 1);
+                UShort leftSiblingKeysNum = leftSibling.getKeysNum();
+
+                if (!leftSibling.isFull())
+                {
+                    UShort sum = childKeysNum + leftSiblingKeysNum;
+                    UShort newLeftSiblingKeysNum = sum / 2 + (sum % 2 == 1 ? 1 : 0);
+                    UShort movedKeys = newLeftSiblingKeysNum - leftSiblingKeysNum;
+                    UShort childLeftKeys = childKeysNum - movedKeys;
+
+                    leftSibling.setKeyNum(newLeftSiblingKeysNum);
+
+                    currentNode.copyKey(leftSibling.getKey(leftSiblingKeysNum), currentNode.getKey(i - 1));
+                    currentNode.copyKeys(leftSibling.getKey(leftSiblingKeysNum + 1), child.getKey(0),
+                            movedKeys - 1);
+                    currentNode.copyKey(currentNode.getKey(i - 1),
+                            child.getKey(movedKeys - 1));
+
+                    if (!isChildLeaf)
+                        currentNode.copyCursors(leftSibling.getCursorPtr(leftSiblingKeysNum + 1), child.getCursorPtr(0),
+                                movedKeys);
+
+                    for (int j = 0; j < childLeftKeys; ++j)
+                        currentNode.copyKey(child.getKey(j), child.getKey(j + movedKeys));
+
+                    if (!isChildLeaf)
+                    {
+                        for (int j = 0; j <= childLeftKeys; ++j)
+                            currentNode.copyCursors(currentNode.getCursorPtr(j),
+                                    currentNode.getCursorPtr(j + movedKeys), 1);
+                    }
+
+                    child.setKeyNum(childLeftKeys);
+
+                    leftSibling.writePage();
+                    child.writePage();
+                    currentNode.writePage();
+
+                    if (c->compare(currentNode.getKey(i - 1), k, getRecSize()))
+                        insertNonFull(k, child);
+                    else
+                        insertNonFull(k, leftSibling);
+
+                    return;
+                }
+            }
+
+            if (i < keysNum)
+            {
+                rightSibling.readPageFromChild(currentNode, i + 1);
+                UShort rightSiblingKeysNum = rightSibling.getKeysNum();
+
+                if (!rightSibling.isFull())
+                {
+                    UShort sum = childKeysNum + rightSiblingKeysNum;
+                    UShort newRightSiblingKeysNum = sum / 2 + (sum % 2 == 1 ? 1 : 0);
+                    UShort movedKeys = newRightSiblingKeysNum - rightSiblingKeysNum;
+                    UShort childLeftKeys = childKeysNum - movedKeys;
+
+                    rightSibling.setKeyNum(newRightSiblingKeysNum);
+
+                    for (int j = newRightSiblingKeysNum - 1; j >= movedKeys; --j)
+                        currentNode.copyKey(rightSibling.getKey(j), rightSibling.getKey(j - movedKeys));
+
+                    if (!isChildLeaf)
+                    {
+                        for (int j = newRightSiblingKeysNum; j >= movedKeys; --j)
+                            currentNode.copyCursors(rightSibling.getCursorPtr(j),
+                                                    rightSibling.getCursorPtr(j - movedKeys), 1);
+                    }
+
+                    currentNode.copyKey(rightSibling.getKey(movedKeys), currentNode.getKey(i));
+                    currentNode.copyKeys(rightSibling.getKey(0), child.getKey(childLeftKeys + 1), movedKeys - 1);
+                    if (!isChildLeaf)
+                        currentNode.copyCursors(rightSibling.getCursorPtr(0), child.getCursorPtr(childLeftKeys + 1),
+                                                movedKeys);
+                    currentNode.copyKey(currentNode.getKey(i), child.getKey(childLeftKeys));
+
+                    child.setKeyNum(childLeftKeys);
+
+                    child.writePage();
+                    rightSibling.writePage();
+                    currentNode.writePage();
+
+                    if (c->compare(currentNode.getKey(i), k, getRecSize()))
+                        insertNonFull(k, rightSibling);
+                    else
+                        insertNonFull(k, child);
+
+                    return;
+                }
+            }
+
+            PageWrapper middle(this);
+
+            if (i > 0)
+            {
+                splitChildren(currentNode, i - 1, leftSibling, middle, child);
+                if (c->compare(currentNode.getKey(i), k, getRecSize()))
+                    insertNonFull(k, child);
+                else if (c->compare(currentNode.getKey(i - 1), k, getRecSize()))
+                    insertNonFull(k, middle);
+                else
+                    insertNonFull(k, leftSibling);
+            }
+            else
+            {
+                splitChildren(currentNode, i, child, middle, rightSibling);
+                if (c->compare(currentNode.getKey(i + 1), k, getRecSize()))
+                    insertNonFull(k, rightSibling);
+                else if (c->compare(currentNode.getKey(i), k, getRecSize()))
+                    insertNonFull(k, middle);
+                else
+                    insertNonFull(k, child);
+            }
+        }
+        else // If the child is not full, we can simply recursively call the method on it.
+            insertNonFull(k, child);
+    }
 }
 
 void BaseBStarTree::splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild)
 {
+    if (node.isFull())
+        throw std::domain_error("A parent node is full, so its child can't be splitted");
 
+    if (iChild > node.getKeysNum())
+        throw std::invalid_argument("Cursor not exists");
+
+    if (leftChild.getPageNum() == 0)
+        leftChild.readPageFromChild(node, iChild);
+
+    UShort rightChildKeysNum = leftChild.getKeysNum() / 2;
+    UShort leftChildKeysNum = leftChild.getKeysNum() - rightChildKeysNum - 1;
+
+    // Allocating page for the right child which is new created child.
+    rightChild.allocPage(rightChildKeysNum, leftChild.isLeaf());
+
+    // Copying keys and cursors from the right half of the left child to the right child.
+    rightChild.copyKeys(rightChild.getKey(0), leftChild.getKey(leftChildKeysNum + 1), rightChildKeysNum);
+    if (!leftChild.isLeaf())
+        node.copyCursors(rightChild.getCursorPtr(0), leftChild.getCursorPtr(leftChildKeysNum + 1),
+                rightChildKeysNum + 1);
+
+    // Increasing number of keys num in the parent node for inserting median.
+    UShort keysNum = node.getKeysNum() + 1;
+    node.setKeyNum(keysNum);
+
+    // Shifting coursors in the parent to the right.
+    for(int j = keysNum - 1; j > iChild; --j)
+        node.copyCursors(node.getCursorPtr(j + 1), node.getCursorPtr(j), 1);
+
+    // Setting coursor in the parent to the right child.
+    node.setCursor(iChild + 1, rightChild.getPageNum());
+
+    // Shifting keys in the parent to the right.
+    for(int j = keysNum - 2; j >= iChild; --j)
+        node.copyKey(node.getKey(j + 1), node.getKey(j));
+
+    // Moving median to the parent.
+    node.copyKey(node.getKey(iChild), leftChild.getKey(leftChildKeysNum));
+    leftChild.setKeyNum(leftChildKeysNum);
+
+    // Writing the pages to the disk.
+    leftChild.writePage();
+    rightChild.writePage();
+    node.writePage();
+}
+
+void BaseBStarTree::splitChildren(PageWrapper& node, UShort iLeft,
+        PageWrapper& left, PageWrapper& middle, PageWrapper& right)
+{
+    if (node.isFull())
+        throw std::domain_error("A parent node is full, so its children can't be splitted");
+
+    if (iLeft >= node.getKeysNum())
+        throw std::invalid_argument("Left and/or cursors do not exist");
+
+    if (left.getPageNum() == 0)
+        left.readPageFromChild(node, iLeft);
+
+    if (right.getPageNum() == 0)
+        right.readPageFromChild(node, iLeft + 1);
+
+    bool isLeaf = left.isLeaf();
+
+    UShort iRight = iLeft + 1;
+
+    middle.allocPage(getMiddleSplitProductKeys(), isLeaf);
+
+    UShort keysNum = left.getKeysNum() + right.getKeysNum() + 1;
+    Byte* keys = new Byte[keysNum];
+    Byte* cursors = isLeaf ? nullptr : new Byte[keysNum + 1];
+
+    node.copyKeys(&keys[0], left.getKey(0), left.getKeysNum());
+    if (!isLeaf)
+        node.copyCursors(&cursors[0], left.getCursorPtr(0), left.getKeysNum() + 1);
+
+    node.copyKey(&keys[left.getKeysNum()], node.getKey(iLeft));
+
+    node.copyKeys(&keys[left.getKeysNum() + 1], right.getKey(0), right.getKeysNum());
+    if (!isLeaf)
+        node.copyCursors(&cursors[left.getKeysNum() + 1], right.getCursorPtr(0), right.getKeysNum() + 1);
+
+//    int i;
+//    for (i = 0; i < keysNum - 1 && _comparator->compare(&keys[i], k, _recSize); ++i) ;
+//
+//    for (int j = keysNum - 1; j > i; ++j)
+//        node.copyKey(&keys[j], &keys[j - 1]);
+//
+//    node.copyKey(&keys[i], k);
+
+    left.setKeyNum(getLeftSplitProductKeys());
+
+    node.copyKeys(left.getKey(0), &keys[0], getLeftSplitProductKeys());
+    if (!isLeaf)
+        node.copyCursors(left.getCursorPtr(0), &cursors[0], getLeftSplitProductKeys() + 1);
+
+    node.copyKeys(middle.getKey(0), &keys[getLeftSplitProductKeys() + 1], getMiddleSplitProductKeys());
+    if (!isLeaf)
+        node.copyCursors(middle.getCursorPtr(0), &cursors[getLeftSplitProductKeys() + 1],
+                getMiddleSplitProductKeys() + 1);
+
+    right.setKeyNum(getRightSplitProductKeys());
+    node.copyKeys(right.getKey(0), &keys[getLeftSplitProductKeys() + getMiddleSplitProductKeys() + 2],
+            getRightSplitProductKeys());
+    if (!isLeaf)
+        node.copyCursors(right.getCursorPtr(0), &cursors[getLeftSplitProductKeys() + getMiddleSplitProductKeys() + 2],
+                getRightSplitProductKeys() + 1);
+
+    node.copyKey(node.getKey(iLeft), &keys[getLeftSplitProductKeys()]);
+
+    UShort parentKeysNum = node.getKeysNum() + 1;
+    node.setKeyNum(parentKeysNum);
+
+    for (int i = parentKeysNum - 1; i > iLeft; --i)
+        node.copyKey(node.getKey(i), node.getKey(i - 1));
+
+    node.copyKey(node.getKey(iRight), &keys[getLeftSplitProductKeys() + getMiddleSplitProductKeys() + 1]);
+
+    for (int i = parentKeysNum; i > iRight; --i)
+        node.copyCursors(node.getCursorPtr(i), node.getCursorPtr(i - 1), 1);
+
+    node.setCursor(iLeft + 1, middle.getPageNum());
+
+    left.writePage();
+    middle.writePage();
+    right.writePage();
+    node.writePage();
+
+    delete[] keys;
+    if (cursors != nullptr)
+        delete[] cursors;
 }
 
 void BaseBStarTree::setOrder(UShort order, UShort recSize)
@@ -1579,7 +1887,11 @@ void BaseBStarTree::setOrder(UShort order, UShort recSize)
     _minKeys = (2 * _order - 2) / 3;
     _maxKeys = _order - 1;
 
-    _maxRootKeys = 2 * ((2 * _order - 2) / 3);
+    _maxRootKeys = 2 * _minKeys;
+
+    _leftSplitProductKeys = (2 * _order - 2) / 3;
+    _middleSplitProductKeys = (2 * _order - 1) / 3;
+    _rightSplitProductKeys = 2 * _order / 3 - 1;
 
     UInt maxPossibleNodeKeys = std::max(_maxKeys, _maxRootKeys);
 
@@ -1589,6 +1901,8 @@ void BaseBStarTree::setOrder(UShort order, UShort recSize)
     _keysSize = _recSize * maxPossibleNodeKeys;
     _cursorsOfs = _keysSize + KEYS_OFS;
     _nodePageSize = _cursorsOfs + CURSOR_SZ * (maxPossibleNodeKeys + 1);
+
+    reallocWorkPages();
 }
 
 bool BaseBStarTree::isFull(const PageWrapper& page) const
@@ -1623,7 +1937,7 @@ FileBaseBTree::FileBaseBTree(BaseBTree::TreeType treeType)
     {
         case BaseBTree::TreeType::B_TREE: _tree = new BaseBTree(0, 0, nullptr, nullptr); break;
         case BaseBTree::TreeType::B_PLUS_TREE: _tree = new BaseBPlusTree(0, 0, nullptr, nullptr); break;
-//        case BaseBTree::TreeType::B_STAR_TREE: _tree = new BaseBStarTree(0, 0, nullptr, nullptr); break;
+        case BaseBTree::TreeType::B_STAR_TREE: _tree = new BaseBStarTree(0, 0, nullptr, nullptr); break;
     }
 
     isComposition = true;
