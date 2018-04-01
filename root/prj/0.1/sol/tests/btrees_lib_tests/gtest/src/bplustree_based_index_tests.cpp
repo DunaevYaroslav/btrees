@@ -1,6 +1,12 @@
-/**
- * (c) Anton Rigin, group BPI154(2), 2017.
- */
+/// \file
+/// \brief     B+-tree based index test.
+/// \authors   Anton Rigin
+/// \version   0.1.0
+/// \date      01.05.2017 -- 02.04.2018
+///            The course work of Anton Rigin,
+///            the HSE Software Engineering 3-rd year bachelor student.
+///
+////////////////////////////////////////////////////////////////////////////////
 
 #include <gtest-fus/gtest.h>
 
@@ -111,8 +117,8 @@ void BPlusTreeBasedIndexTest::testIndex(std::string fileName, std::string treeFi
     end = clock();
     std::cout << "Time of searching using index: " << getTimeInSecs(begin, end) << " s" << std::endl;
     EXPECT_EQ(expectedCount, occurrences.size());
-    std::wcout << "Found: " << occurrences.size() << std::endl;
-    std::wcout << "Tree's max search depth: " << indexer.getMaxSearchDepth() << std::endl;
+    std::cout << "Found: " << occurrences.size() << std::endl;
+    std::cout << "Tree's max search depth: " << indexer.getMaxSearchDepth() << std::endl;
     writeOccurrencesToFile(occurrences, indexOutFileName);
 
     std::cout << "Linear searching..." << std::endl;
@@ -121,7 +127,7 @@ void BPlusTreeBasedIndexTest::testIndex(std::string fileName, std::string treeFi
     end = clock();
     std::cout << "Time of linear searching: " << getTimeInSecs(begin, end) << " s" << std::endl;
     EXPECT_EQ(expectedCount, occurrences.size());
-    std::wcout << "Found: " << occurrences.size() << std::endl;
+    std::cout << "Found: " << occurrences.size() << std::endl;
     writeOccurrencesToFile(occurrences, linearOutFileName);
 }
 
@@ -165,10 +171,10 @@ void BPlusTreeBasedIndexTest::testIndexWithDifferentParams(std::string fileName,
         std::cout << "Time of searching using index: " << searchingTime << " s" << std::endl;
 
         EXPECT_EQ(expectedCount, occurrences.size());
-        std::wcout << "Found: " << occurrences.size() << std::endl;
+        std::cout << "Found: " << occurrences.size() << std::endl;
 
         int treeMaxSearchDepth = indexer.getMaxSearchDepth();
-        std::wcout << "Tree's max search depth: " << treeMaxSearchDepth << std::endl;
+        std::cout << "Tree's max search depth: " << treeMaxSearchDepth << std::endl;
         writeOccurrencesToFile(occurrences, indexOutFileName);
 
         outputCsvFile << ORDERS[i] << ";" << indexingTime << ";"

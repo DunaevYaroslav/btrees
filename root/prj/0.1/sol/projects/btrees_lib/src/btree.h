@@ -1,15 +1,10 @@
 ﻿/// \file
 /// \brief     B-tree, B+-tree and B*-tree classes
-/// \authors   Sergey Shershakov, Anton Rigin
+/// \authors   Anton Rigin, also code by Sergey Shershakov used
 /// \version   0.1.0
-/// \date      01.05.2017 -- 04.02.2018
-///            This is a part of the course "Algorithms and Data Structures"
-///            provided by the School of Software Engineering of the Faculty
-///            of Computer Science at the Higher School of Economics
-///            and of the course work of Anton Rigin,
+/// \date      01.05.2017 -- 02.04.2018
+///            The course work of Anton Rigin,
 ///            the HSE Software Engineering 3-rd year bachelor student.
-///
-/// The implementation of the appropriate methods is in the file btree.cpp.
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -309,7 +304,7 @@ public:
          *
          *  Throws an exception is the current node is fulfilled or the child node is not fulfilled.
          */
-        virtual void splitChild(UShort iChild);
+        void splitChild(UShort iChild);
 
     protected:
 
@@ -421,7 +416,7 @@ public:
     UInt allocNewRootPage(PageWrapper& pw);
 
     /** \brief Inserts the key k into the tree using the ordering. */
-    virtual void insert(const Byte* k);
+    void insert(const Byte* k);
 
     /** \brief Insert key k into the non-fulfilled node using the ordering.
      *
@@ -622,19 +617,6 @@ protected:
     /** \brief Checks whether the stream is opened (the tree is ready) or not, If not, throws an exception. */
     void checkForOpenStream();
 
-    /** \brief Checks whether the node's keys number matches the tree order or not.
-     *  
-     *  \c keysNum The node's keys number.
-     *  \c isRoot Defines whether the node is root or not.
-     *  \returns true if the node's keys number matches the tree order, otherwise false.
-     */
-    bool checkKeysNumber(UShort keysNum, bool isRoot);
-
-    /** \brief The overloaded checkKeysNumber().
-     *  \throws an exception if the node's keys number does not match the tree order
-     */
-    void checkKeysNumberExc(UShort keysNum, bool isRoot);
-
     /** \brief Writes the tree's header into the stream. */
     void writeHeader();
 
@@ -815,8 +797,16 @@ public:
 
 public:
 
+    /**
+     * \brief Returns the max keys number for the leaf node of the B+-tree.
+     * \returns The max keys number for the leaf node of the B+-tree.
+     */
     UInt getMaxLeafKeys() const { return _maxLeafKeys; }
 
+    /**
+     * \brief Returns the min keys number for the leaf node of the B+-tree.
+     * \returns The min keys number for the leaf node of the B+-tree.
+     */
     UInt getMinLeafKeys() const { return _minLeafKeys; }
 
 protected:
@@ -829,8 +819,14 @@ protected:
 
 protected:
 
+    /**
+     * The max keys number for the leaf node of the B+-tree.
+     */
     UInt _maxLeafKeys;
 
+    /**
+     * The min keys number for the leaf node of the B+-tree.
+     */
     UInt _minLeafKeys;
 
 };
@@ -854,9 +850,9 @@ protected:
 
 public:
 
-    virtual void insert(const Byte* k) override;
-
 #ifdef BTREE_WITH_DELETION
+
+// TODO: removing in B*-tree.
 
 //    virtual bool remove(const Byte* k, PageWrapper& currentPage) override;
 //
@@ -878,12 +874,28 @@ public:
 
 public:
 
+    /**
+     * \brief Returns the max keys number for the root node of the B*-tree.
+     * \returns The max keys number for the root node of the B*-tree.
+     */
     UInt getMaxRootKeys() const { return _maxRootKeys; }
 
+    /**
+     * \brief Returns the keys number for the left split product in the B*-tree.
+     * \returns The keys number for the left split product in the B*-tree.
+     */
     UInt getLeftSplitProductKeys() const { return _leftSplitProductKeys; }
 
+    /**
+     * \brief Returns the keys number for the middle split product in the B*-tree.
+     * \returns The keys number for the middle split product in the B*-tree.
+     */
     UInt getMiddleSplitProductKeys() const { return _middleSplitProductKeys; }
 
+     /**
+     * \brief Returns the keys number for the right split product in the B*-tree.
+     * \returns The keys number for the right split product in the B*-tree.
+     */
     UInt getRightSplitProductKeys() const { return _rightSplitProductKeys; }
 
 protected:
@@ -892,11 +904,38 @@ protected:
 
     virtual void splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild) override;
 
+    /**
+     * \brief Splits 2 children into the 3 children.
+     *
+     * \param node The parent node.
+     * \param iLeft The index of the parent node's cursor to the left child.
+     * \param left The left child.
+     * \param middle The page that will contain the new middle child.
+     * \param right The right child.
+     */
     void splitChildren(PageWrapper& node, UShort iLeft, PageWrapper& left, PageWrapper& middle, PageWrapper& right);
 
+    /**
+     * \brief Shares keys from the child to its left sibling to make this child non-full and inserts the key \param k.
+     *
+     * @param k The key for insertion.
+     * @param node The parent node.
+     * @param iChild The index of the parent node's cursor to the child.
+     * @param child The child.
+     * @param left The child's left sibling.
+     */
     void shareKeysWithLeftChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
             PageWrapper& child, PageWrapper& left);
 
+    /**
+     * \brief Shares keys from the child to its right sibling to make this child non-full and inserts the key \param k.
+     *
+     * @param k The key for insertion.
+     * @param node The parent node.
+     * @param iChild The index of the parent node's cursor to the child.
+     * @param child The child.
+     * @param right The child's right sibling.
+     */
     void shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
             PageWrapper& child, PageWrapper& right);
 
@@ -906,12 +945,24 @@ protected:
 
 protected:
 
+    /**
+     * \brief The max keys number for the root node of the B*-tree.
+     */
     UInt _maxRootKeys;
 
+    /**
+     * \brief The keys number for the left split product in the B*-tree.
+     */
     UInt _leftSplitProductKeys;
 
+    /**
+     * \brief The keys number for the middle split product in the B*-tree.
+     */
     UInt _middleSplitProductKeys;
 
+    /**
+     * \brief The keys number for the right split product in the B*-tree.
+     */
     UInt _rightSplitProductKeys;
 
 };

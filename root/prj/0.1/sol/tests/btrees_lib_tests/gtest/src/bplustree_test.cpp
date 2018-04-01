@@ -1,6 +1,12 @@
-/**
- * The task is done by Anton Rigin, group BPI154(2) in 2017.
- */
+/// \file
+/// \brief     B+-tree test.
+/// \authors   Anton Rigin
+/// \version   0.1.0
+/// \date      01.05.2017 -- 02.04.2018
+///            The course work of Anton Rigin,
+///            the HSE Software Engineering 3-rd year bachelor student.
+///
+////////////////////////////////////////////////////////////////////////////////
 
 #include <gtest-fus/gtest.h>
 

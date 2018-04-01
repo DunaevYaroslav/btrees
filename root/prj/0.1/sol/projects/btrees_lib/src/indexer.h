@@ -2,11 +2,8 @@
 /// \brief     B-tree / B+-tree / B*-tree file indexer.
 /// \authors   Anton Rigin
 /// \version   0.1.0
-/// \date      01.06.2017 -- 04.02.2018
-///            This is a part of the course "Algorithms and Data Structures"
-///            provided by the School of Software Engineering of the Faculty
-///            of Computer Science at the Higher School of Economics
-///            and of the course work of Anton Rigin,
+/// \date      01.05.2017 -- 02.04.2018
+///            The course work of Anton Rigin,
 ///            the HSE Software Engineering 3-rd year bachelor student.
 ///
 ////////////////////////////////////////////////////////////////////////////////
