@@ -12,7 +12,8 @@
 
 using namespace xi;
 
-static const int ORDERS[] = { 4, 6, 8, 10, 20, 30, 40, 50, 250, 450, 650, 850, 1050, 1250, 1450, 1650, 1850, 2050 };
+static const int ORDERS[] = { 6, 7, 8, 9, 10, 20, 30, 40, 50, 250, 450, 650, 850,
+        1050, 1250, 1450, 1650, 1850, 2050 };
 
 static const int ORDERS_LENGTH = sizeof(ORDERS) / sizeof(int);
 

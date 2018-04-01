@@ -1687,12 +1687,6 @@ void BaseBStarTree::insertNonFull(const Byte* k, PageWrapper& currentNode)
 //                    currentNode.writePage();
 
                     shareKeysWithLeftChildAndInsert(k, currentNode, i, child, leftSibling);
-
-                    if (c->compare(currentNode.getKey(i - 1), k, getRecSize()))
-                        insertNonFull(k, child);
-                    else
-                        insertNonFull(k, leftSibling);
-
                     return;
                 }
             }
@@ -1735,12 +1729,6 @@ void BaseBStarTree::insertNonFull(const Byte* k, PageWrapper& currentNode)
 //                    currentNode.writePage();
 
                     shareKeysWithRightChildAndInsert(k, currentNode, i, child, rightSibling);
-
-                    if (c->compare(currentNode.getKey(i), k, getRecSize()))
-                        insertNonFull(k, rightSibling);
-                    else
-                        insertNonFull(k, child);
-
                     return;
                 }
             }
@@ -1934,6 +1922,13 @@ void BaseBStarTree::shareKeysWithLeftChildAndInsert(const Byte* k, PageWrapper& 
     UShort movedKeys = newLeftSiblingKeysNum - leftSiblingKeysNum;
     UShort childLeftKeys = childKeysNum - movedKeys;
 
+    if (newLeftSiblingKeysNum == getMaxKeys() && movedKeys == 1 && c->compare(k, child.getKey(0), _recSize))
+    {
+        insertNonFull(node.getKey(iChild - 1), left);
+        node.copyKey(node.getKey(iChild - 1), k);
+        return;
+    }
+
 //    int insertionPlace = -1;
 //
 //    for (int j = 0; j < leftSiblingKeysNum; ++j)
@@ -1986,6 +1981,11 @@ void BaseBStarTree::shareKeysWithLeftChildAndInsert(const Byte* k, PageWrapper& 
     left.writePage();
     child.writePage();
     node.writePage();
+
+    if (c->compare(k, node.getKey(iChild - 1), getRecSize()))
+        insertNonFull(k, left);
+    else
+        insertNonFull(k, child);
 }
 
 void BaseBStarTree::shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
@@ -2014,6 +2014,14 @@ void BaseBStarTree::shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper&
     UShort movedKeys = newRightSiblingKeysNum - rightSiblingKeysNum;
     UShort childLeftKeys = childKeysNum - movedKeys;
 
+    if (newRightSiblingKeysNum == getMaxKeys() && movedKeys == 1
+            && c->compare(child.getKey(childKeysNum - 1), k, _recSize))
+    {
+        insertNonFull(node.getKey(iChild), right);
+        node.copyKey(node.getKey(iChild), k);
+        return;
+    }
+
     right.setKeyNum(newRightSiblingKeysNum);
 
     for (int j = newRightSiblingKeysNum - 1; j >= movedKeys; --j)
@@ -2036,6 +2044,11 @@ void BaseBStarTree::shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper&
     child.writePage();
     right.writePage();
     node.writePage();
+
+    if (c->compare(node.getKey(iChild), k, getRecSize()))
+        insertNonFull(k, right);
+    else
+        insertNonFull(k, child);
 }
 
 void BaseBStarTree::setOrder(UShort order, UShort recSize)
