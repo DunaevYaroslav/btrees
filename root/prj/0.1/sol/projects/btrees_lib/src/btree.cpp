@@ -1008,7 +1008,10 @@ BaseBTree::PageWrapper::~PageWrapper()
 void BaseBTree::PageWrapper::reallocData(UInt sz)
 {
     if (_data)
+    {
         delete[] _data;
+        _data = nullptr;
+    }
 
     if (sz)
         _data = new Byte[sz];
@@ -1616,8 +1619,8 @@ void BaseBStarTree::insertNonFull(const Byte* k, PageWrapper& currentNode)
 
         if(child.isFull())
         {
-            UShort childKeysNum = child.getKeysNum();
-            bool isChildLeaf = child.isLeaf();
+//            UShort childKeysNum = child.getKeysNum();
+//            bool isChildLeaf = child.isLeaf();
 
             PageWrapper leftSibling(this);
             PageWrapper rightSibling(this);
@@ -1629,38 +1632,61 @@ void BaseBStarTree::insertNonFull(const Byte* k, PageWrapper& currentNode)
 
                 if (!leftSibling.isFull())
                 {
-                    UShort sum = childKeysNum + leftSiblingKeysNum;
-                    UShort newLeftSiblingKeysNum = sum / 2 + (sum % 2 == 1 ? 1 : 0);
-                    UShort movedKeys = newLeftSiblingKeysNum - leftSiblingKeysNum;
-                    UShort childLeftKeys = childKeysNum - movedKeys;
+//                    UShort sum = childKeysNum + leftSiblingKeysNum;
+//                    UShort newLeftSiblingKeysNum = sum / 2 + (sum % 2 == 1 ? 1 : 0);
+//                    UShort movedKeys = newLeftSiblingKeysNum - leftSiblingKeysNum;
+//                    UShort childLeftKeys = childKeysNum - movedKeys;
+//
+//                    int insertionPlace = -1;
+//
+//                    for (int j = 0; j < leftSiblingKeysNum; ++j)
+//                    {
+//                        if (c->compare(leftSibling.getKey(j), k, getRecSize()))
+//                            insertionPlace = j;
+//                    }
+//
+//                    if (insertionPlace == -1 && c->compare(currentNode.getKey(i), currentNode.getKey(i - 1),
+//                            getRecSize()))
+//                        insertionPlace = leftSiblingKeysNum;
+//
+//                    if (insertionPlace == -1)
+//                    {
+//                        for (int j = 0; j < childKeysNum; ++j)
+//                            insertionPlace = leftSiblingKeysNum + j;
+//                    }
+//
+//                    if (insertionPlace == -1)
+//                        insertionPlace = leftSiblingKeysNum + childKeysNum;
+//
+//                    leftSibling.setKeyNum(newLeftSiblingKeysNum);
+//
+//                    currentNode.copyKey(leftSibling.getKey(leftSiblingKeysNum), currentNode.getKey(i - 1));
+//                    currentNode.copyKeys(leftSibling.getKey(leftSiblingKeysNum + 1), child.getKey(0),
+//                            movedKeys - 1);
+//                    currentNode.copyKey(currentNode.getKey(i - 1),
+//                            child.getKey(movedKeys - 1));
+//
+//                    if (!isChildLeaf)
+//                        currentNode.copyCursors(leftSibling.getCursorPtr(leftSiblingKeysNum + 1), child.getCursorPtr(0),
+//                                movedKeys);
+//
+//                    for (int j = 0; j < childLeftKeys; ++j)
+//                        currentNode.copyKey(child.getKey(j), child.getKey(j + movedKeys));
+//
+//                    if (!isChildLeaf)
+//                    {
+//                        for (int j = 0; j <= childLeftKeys; ++j)
+//                            currentNode.copyCursors(child.getCursorPtr(j),
+//                                    child.getCursorPtr(j + movedKeys), 1);
+//                    }
+//
+//                    child.setKeyNum(childLeftKeys);
+//
+//                    leftSibling.writePage();
+//                    child.writePage();
+//                    currentNode.writePage();
 
-                    leftSibling.setKeyNum(newLeftSiblingKeysNum);
-
-                    currentNode.copyKey(leftSibling.getKey(leftSiblingKeysNum), currentNode.getKey(i - 1));
-                    currentNode.copyKeys(leftSibling.getKey(leftSiblingKeysNum + 1), child.getKey(0),
-                            movedKeys - 1);
-                    currentNode.copyKey(currentNode.getKey(i - 1),
-                            child.getKey(movedKeys - 1));
-
-                    if (!isChildLeaf)
-                        currentNode.copyCursors(leftSibling.getCursorPtr(leftSiblingKeysNum + 1), child.getCursorPtr(0),
-                                movedKeys);
-
-                    for (int j = 0; j < childLeftKeys; ++j)
-                        currentNode.copyKey(child.getKey(j), child.getKey(j + movedKeys));
-
-                    if (!isChildLeaf)
-                    {
-                        for (int j = 0; j <= childLeftKeys; ++j)
-                            currentNode.copyCursors(currentNode.getCursorPtr(j),
-                                    currentNode.getCursorPtr(j + movedKeys), 1);
-                    }
-
-                    child.setKeyNum(childLeftKeys);
-
-                    leftSibling.writePage();
-                    child.writePage();
-                    currentNode.writePage();
+                    shareKeysWithLeftChildAndInsert(k, currentNode, i, child, leftSibling);
 
                     if (c->compare(currentNode.getKey(i - 1), k, getRecSize()))
                         insertNonFull(k, child);
@@ -1678,35 +1704,37 @@ void BaseBStarTree::insertNonFull(const Byte* k, PageWrapper& currentNode)
 
                 if (!rightSibling.isFull())
                 {
-                    UShort sum = childKeysNum + rightSiblingKeysNum;
-                    UShort newRightSiblingKeysNum = sum / 2 + (sum % 2 == 1 ? 1 : 0);
-                    UShort movedKeys = newRightSiblingKeysNum - rightSiblingKeysNum;
-                    UShort childLeftKeys = childKeysNum - movedKeys;
+//                    UShort sum = childKeysNum + rightSiblingKeysNum;
+//                    UShort newRightSiblingKeysNum = sum / 2 + (sum % 2 == 1 ? 1 : 0);
+//                    UShort movedKeys = newRightSiblingKeysNum - rightSiblingKeysNum;
+//                    UShort childLeftKeys = childKeysNum - movedKeys;
+//
+//                    rightSibling.setKeyNum(newRightSiblingKeysNum);
+//
+//                    for (int j = newRightSiblingKeysNum - 1; j >= movedKeys; --j)
+//                        currentNode.copyKey(rightSibling.getKey(j), rightSibling.getKey(j - movedKeys));
+//
+//                    if (!isChildLeaf)
+//                    {
+//                        for (int j = newRightSiblingKeysNum; j >= movedKeys; --j)
+//                            currentNode.copyCursors(rightSibling.getCursorPtr(j),
+//                                    rightSibling.getCursorPtr(j - movedKeys), 1);
+//                    }
+//
+//                    currentNode.copyKey(rightSibling.getKey(movedKeys - 1), currentNode.getKey(i));
+//                    currentNode.copyKeys(rightSibling.getKey(0), child.getKey(childLeftKeys + 1), movedKeys - 1);
+//                    if (!isChildLeaf)
+//                        currentNode.copyCursors(rightSibling.getCursorPtr(0), child.getCursorPtr(childLeftKeys + 1),
+//                                movedKeys);
+//                    currentNode.copyKey(currentNode.getKey(i), child.getKey(childLeftKeys));
+//
+//                    child.setKeyNum(childLeftKeys);
+//
+//                    child.writePage();
+//                    rightSibling.writePage();
+//                    currentNode.writePage();
 
-                    rightSibling.setKeyNum(newRightSiblingKeysNum);
-
-                    for (int j = newRightSiblingKeysNum - 1; j >= movedKeys; --j)
-                        currentNode.copyKey(rightSibling.getKey(j), rightSibling.getKey(j - movedKeys));
-
-                    if (!isChildLeaf)
-                    {
-                        for (int j = newRightSiblingKeysNum; j >= movedKeys; --j)
-                            currentNode.copyCursors(rightSibling.getCursorPtr(j),
-                                    rightSibling.getCursorPtr(j - movedKeys), 1);
-                    }
-
-                    currentNode.copyKey(rightSibling.getKey(movedKeys - 1), currentNode.getKey(i));
-                    currentNode.copyKeys(rightSibling.getKey(0), child.getKey(childLeftKeys + 1), movedKeys - 1);
-                    if (!isChildLeaf)
-                        currentNode.copyCursors(rightSibling.getCursorPtr(0), child.getCursorPtr(childLeftKeys + 1),
-                                movedKeys);
-                    currentNode.copyKey(currentNode.getKey(i), child.getKey(childLeftKeys));
-
-                    child.setKeyNum(childLeftKeys);
-
-                    child.writePage();
-                    rightSibling.writePage();
-                    currentNode.writePage();
+                    shareKeysWithRightChildAndInsert(k, currentNode, i, child, rightSibling);
 
                     if (c->compare(currentNode.getKey(i), k, getRecSize()))
                         insertNonFull(k, rightSibling);
@@ -1815,18 +1843,18 @@ void BaseBStarTree::splitChildren(PageWrapper& node, UShort iLeft,
     middle.allocPage(getMiddleSplitProductKeys(), isLeaf);
 
     UShort keysNum = left.getKeysNum() + right.getKeysNum() + 1;
-    Byte* keys = new Byte[keysNum];
-    Byte* cursors = isLeaf ? nullptr : new Byte[keysNum + 1];
+    Byte* keys = new Byte[keysNum * _recSize];
+    Byte* cursors = isLeaf ? nullptr : new Byte[(keysNum + 1) * CURSOR_SZ];
 
     node.copyKeys(&keys[0], left.getKey(0), left.getKeysNum());
     if (!isLeaf)
         node.copyCursors(&cursors[0], left.getCursorPtr(0), left.getKeysNum() + 1);
 
-    node.copyKey(&keys[left.getKeysNum()], node.getKey(iLeft));
+    node.copyKey(&keys[left.getKeysNum() * _recSize], node.getKey(iLeft));
 
-    node.copyKeys(&keys[left.getKeysNum() + 1], right.getKey(0), right.getKeysNum());
+    node.copyKeys(&keys[(left.getKeysNum() + 1) * _recSize], right.getKey(0), right.getKeysNum());
     if (!isLeaf)
-        node.copyCursors(&cursors[left.getKeysNum() + 1], right.getCursorPtr(0), right.getKeysNum() + 1);
+        node.copyCursors(&cursors[(left.getKeysNum() + 1) * CURSOR_SZ], right.getCursorPtr(0), right.getKeysNum() + 1);
 
 //    int i;
 //    for (i = 0; i < keysNum - 1 && _comparator->compare(&keys[i], k, _recSize); ++i) ;
@@ -1842,19 +1870,20 @@ void BaseBStarTree::splitChildren(PageWrapper& node, UShort iLeft,
     if (!isLeaf)
         node.copyCursors(left.getCursorPtr(0), &cursors[0], getLeftSplitProductKeys() + 1);
 
-    node.copyKeys(middle.getKey(0), &keys[getLeftSplitProductKeys() + 1], getMiddleSplitProductKeys());
+    node.copyKeys(middle.getKey(0), &keys[(getLeftSplitProductKeys() + 1) * _recSize], getMiddleSplitProductKeys());
     if (!isLeaf)
-        node.copyCursors(middle.getCursorPtr(0), &cursors[getLeftSplitProductKeys() + 1],
+        node.copyCursors(middle.getCursorPtr(0), &cursors[(getLeftSplitProductKeys() + 1) * CURSOR_SZ],
                 getMiddleSplitProductKeys() + 1);
 
     right.setKeyNum(getRightSplitProductKeys());
-    node.copyKeys(right.getKey(0), &keys[getLeftSplitProductKeys() + getMiddleSplitProductKeys() + 2],
+    node.copyKeys(right.getKey(0), &keys[(getLeftSplitProductKeys() + getMiddleSplitProductKeys() + 2) * _recSize],
             getRightSplitProductKeys());
     if (!isLeaf)
-        node.copyCursors(right.getCursorPtr(0), &cursors[getLeftSplitProductKeys() + getMiddleSplitProductKeys() + 2],
+        node.copyCursors(right.getCursorPtr(0),
+                &cursors[(getLeftSplitProductKeys() + getMiddleSplitProductKeys() + 2) * CURSOR_SZ],
                 getRightSplitProductKeys() + 1);
 
-    node.copyKey(node.getKey(iLeft), &keys[getLeftSplitProductKeys()]);
+    node.copyKey(node.getKey(iLeft), &keys[getLeftSplitProductKeys() * _recSize]);
 
     UShort parentKeysNum = node.getKeysNum() + 1;
     node.setKeyNum(parentKeysNum);
@@ -1862,12 +1891,12 @@ void BaseBStarTree::splitChildren(PageWrapper& node, UShort iLeft,
     for (int i = parentKeysNum - 1; i > iLeft; --i)
         node.copyKey(node.getKey(i), node.getKey(i - 1));
 
-    node.copyKey(node.getKey(iRight), &keys[getLeftSplitProductKeys() + getMiddleSplitProductKeys() + 1]);
+    node.copyKey(node.getKey(iRight), &keys[(getLeftSplitProductKeys() + getMiddleSplitProductKeys() + 1) * _recSize]);
 
     for (int i = parentKeysNum; i > iRight; --i)
         node.copyCursors(node.getCursorPtr(i), node.getCursorPtr(i - 1), 1);
 
-    node.setCursor(iLeft + 1, middle.getPageNum());
+    node.setCursor(iRight, middle.getPageNum());
 
     left.writePage();
     middle.writePage();
@@ -1877,6 +1906,136 @@ void BaseBStarTree::splitChildren(PageWrapper& node, UShort iLeft,
     delete[] keys;
     if (cursors != nullptr)
         delete[] cursors;
+}
+
+void BaseBStarTree::shareKeysWithLeftChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
+        PageWrapper& child, PageWrapper& left)
+{
+    if (!child.isFull())
+        throw std::invalid_argument("Child that shares keys should be full");
+
+    if (left.isFull())
+        throw std::invalid_argument("Left sibling should not be full");
+
+    if (iChild > node.getKeysNum())
+        throw std::invalid_argument("Cursor not exists");
+
+    IComparator* c = getComparator();
+    if (!c)
+        throw std::runtime_error("Comparator not set. Can't insert");
+
+    bool isChildLeaf = child.isLeaf();
+
+    UShort childKeysNum = child.getKeysNum();
+    UShort leftSiblingKeysNum = left.getKeysNum();
+
+    UShort sum = childKeysNum + leftSiblingKeysNum;
+    UShort newLeftSiblingKeysNum = sum / 2 + (sum % 2 == 1 ? 1 : 0);
+    UShort movedKeys = newLeftSiblingKeysNum - leftSiblingKeysNum;
+    UShort childLeftKeys = childKeysNum - movedKeys;
+
+//    int insertionPlace = -1;
+//
+//    for (int j = 0; j < leftSiblingKeysNum; ++j)
+//    {
+//        if (c->compare(left.getKey(j), k, getRecSize()))
+//            insertionPlace = j;
+//    }
+//
+//    if (insertionPlace == -1 && c->compare(node.getKey(iChild), node.getKey(iChild - 1), getRecSize()))
+//        insertionPlace = leftSiblingKeysNum;
+//
+//    if (insertionPlace == -1)
+//    {
+//        for (int j = 0; j < childKeysNum; ++j)
+//            insertionPlace = leftSiblingKeysNum + j;
+//    }
+//
+//    if (insertionPlace == -1)
+//        insertionPlace = leftSiblingKeysNum + childKeysNum;
+
+    left.setKeyNum(newLeftSiblingKeysNum);
+
+//    if (insertionPlace == 0)
+//    {
+//        node.copyKey(left.getKey(leftSiblingKeysNum), k);
+//        node.copyKey(left.getKey(leftSiblingKeysNum + 1), node.getKey(iChild - 1));
+//        node.copyKeys(left.getKey(leftSiblingKeysNum + 2), )
+//    }
+//    else
+//        node.copyKey(left.getKey(leftSiblingKeysNum), node.getKey(iChild - 1));
+
+    node.copyKey(left.getKey(leftSiblingKeysNum), node.getKey(iChild - 1));
+    node.copyKeys(left.getKey(leftSiblingKeysNum + 1), child.getKey(0), movedKeys - 1);
+    node.copyKey(node.getKey(iChild - 1), child.getKey(movedKeys - 1));
+
+    if (!isChildLeaf)
+        node.copyCursors(left.getCursorPtr(leftSiblingKeysNum + 1), child.getCursorPtr(0), movedKeys);
+
+    for (int j = 0; j < childLeftKeys; ++j)
+        node.copyKey(child.getKey(j), child.getKey(j + movedKeys));
+
+    if (!isChildLeaf)
+    {
+        for (int j = 0; j <= childLeftKeys; ++j)
+            node.copyCursors(child.getCursorPtr(j), child.getCursorPtr(j + movedKeys), 1);
+    }
+
+    child.setKeyNum(childLeftKeys);
+
+    left.writePage();
+    child.writePage();
+    node.writePage();
+}
+
+void BaseBStarTree::shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
+        PageWrapper& child, PageWrapper& right)
+{
+    if (!child.isFull())
+        throw std::invalid_argument("Child that shares keys should be full");
+
+    if (right.isFull())
+        throw std::invalid_argument("Right sibling should not be full");
+
+    if (iChild >= node.getKeysNum())
+        throw std::invalid_argument("Cursor and/or right sibling not exists");
+
+    IComparator* c = getComparator();
+    if (!c)
+        throw std::runtime_error("Comparator not set. Can't insert");
+
+    bool isChildLeaf = child.isLeaf();
+
+    UShort childKeysNum = child.getKeysNum();
+    UShort rightSiblingKeysNum = right.getKeysNum();
+
+    UShort sum = childKeysNum + rightSiblingKeysNum;
+    UShort newRightSiblingKeysNum = sum / 2 + (sum % 2 == 1 ? 1 : 0);
+    UShort movedKeys = newRightSiblingKeysNum - rightSiblingKeysNum;
+    UShort childLeftKeys = childKeysNum - movedKeys;
+
+    right.setKeyNum(newRightSiblingKeysNum);
+
+    for (int j = newRightSiblingKeysNum - 1; j >= movedKeys; --j)
+        node.copyKey(right.getKey(j), right.getKey(j - movedKeys));
+
+    if (!isChildLeaf)
+    {
+        for (int j = newRightSiblingKeysNum; j >= movedKeys; --j)
+            node.copyCursors(right.getCursorPtr(j), right.getCursorPtr(j - movedKeys), 1);
+    }
+
+    node.copyKey(right.getKey(movedKeys - 1), node.getKey(iChild));
+    node.copyKeys(right.getKey(0), child.getKey(childLeftKeys + 1), movedKeys - 1);
+    if (!isChildLeaf)
+        node.copyCursors(right.getCursorPtr(0), child.getCursorPtr(childLeftKeys + 1), movedKeys);
+    node.copyKey(node.getKey(iChild), child.getKey(childLeftKeys));
+
+    child.setKeyNum(childLeftKeys);
+
+    child.writePage();
+    right.writePage();
+    node.writePage();
 }
 
 void BaseBStarTree::setOrder(UShort order, UShort recSize)

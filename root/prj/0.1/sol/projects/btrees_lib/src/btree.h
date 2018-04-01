@@ -894,6 +894,12 @@ protected:
 
     void splitChildren(PageWrapper& node, UShort iLeft, PageWrapper& left, PageWrapper& middle, PageWrapper& right);
 
+    void shareKeysWithLeftChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
+            PageWrapper& child, PageWrapper& left);
+
+    void shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
+            PageWrapper& child, PageWrapper& right);
+
     virtual void setOrder(UShort order, UShort recSize) override;
 
     virtual bool isFull(const PageWrapper& page) const override;

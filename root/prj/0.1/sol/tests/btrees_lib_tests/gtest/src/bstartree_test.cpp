@@ -299,6 +299,28 @@ TEST_F(BStarTreeTest, InsertS4)
     }
 }
 
+TEST_F(BStarTreeTest, InsertS5)
+{
+    std::string& fn = getFn("InsertS5.xibt");
+
+    ByteComparator comparator;
+    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, 4, 1, &comparator, fn);
+
+
+    for (Byte i = 0; i < 100; ++i)
+    {
+        bt.insert(&i);
+        Byte* searched = bt.search(&i);
+        EXPECT_TRUE(searched != nullptr);
+    }
+
+    for (Byte i = 0; i < 100; ++i)
+    {
+        Byte* searched = bt.search(&i);
+        EXPECT_TRUE(searched != nullptr);
+    }
+}
+
 #ifdef BTREE_WITH_REUSING_FREE_PAGES
 
 TEST_F(BStarTreeTest, Reusing1)
