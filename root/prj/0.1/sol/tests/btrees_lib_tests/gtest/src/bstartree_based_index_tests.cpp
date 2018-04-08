@@ -23,6 +23,8 @@ static const int ORDERS[] = { 6, 7, 8, 9, 10, 20, 30, 40, 50, 250, 450, 650, 850
 
 static const int ORDERS_LENGTH = sizeof(ORDERS) / sizeof(int);
 
+static const int TESTS_COUNT = 10;
+
 /**
  * Represents some methods for testing.
  */
@@ -60,6 +62,9 @@ public:
             std::wstring name, int expectedCount);
 
     void testIndexWithDifferentParams(std::string fileName, std::string treeFileName,
+            std::string indexOutFileName, std::string outputCsvFileName, std::wstring name, int expectedCount);
+
+    void testIndexWithDifferentParamsAndCountAggregates(std::string fileName, std::string treeFileName,
             std::string indexOutFileName, std::string outputCsvFileName, std::wstring name, int expectedCount);
 
 private:
@@ -185,6 +190,84 @@ void BStarTreeBasedIndexTest::testIndexWithDifferentParams(std::string fileName,
     outputCsvFile.close();
 }
 
+void BStarTreeBasedIndexTest::testIndexWithDifferentParamsAndCountAggregates(std::string fileName, std::string treeFileName,
+        std::string indexOutFileName, std::string outputCsvFileName, std::wstring name, int expectedCount)
+{
+    std::cout << "File " << fileName << std::endl;
+
+    fileName = TEST_FILES_PATH + fileName;
+    treeFileName = TEST_FILES_PATH + treeFileName;
+    indexOutFileName = TEST_FILES_PATH + indexOutFileName;
+    outputCsvFileName = TEST_FILES_PATH + outputCsvFileName;
+
+    std::ofstream outputCsvFile(outputCsvFileName);
+
+    if (!outputCsvFile.is_open())
+        throw std::invalid_argument("Cannot open output CSV file for writing");
+
+    outputCsvFile << "Tree order;Mean time of indexing;Time of indexing dispersion;Mean time of searching;Time of searching dispersion;Tree's max search depth" << std::endl;
+
+    for (int i = 0; i < ORDERS_LENGTH; ++i)
+    {
+        std::cout << "Tree order " << ORDERS[i] << std::endl;
+
+        double indexingMean = 0;
+        double indexingSquaresSum = 0;
+
+        double searchingMean = 0;
+        double searchingSquaresSum = 0;
+
+        int treeMaxSearchDepth = 0;
+
+        for (int j = 0; j < TESTS_COUNT; ++j)
+        {
+            xi::Indexer indexer;
+            indexer.create(BaseBTree::TreeType::B_STAR_TREE, ORDERS[i], treeFileName);
+
+            std::cout << "Indexing..." << std::endl;
+            clock_t begin = clock();
+            indexer.indexFile(fileName);
+            clock_t end = clock();
+            double indexingTime = getTimeInSecs(begin, end);
+            std::cout << "Time of indexing: " << indexingTime << " s" << std::endl;
+            indexingMean += indexingTime;
+            indexingSquaresSum += indexingTime * indexingTime;
+
+            std::cout << "Index searching..." << std::endl;
+            begin = clock();
+            std::list<std::wstring> occurrences = indexer.findAllOccurrences(name, fileName);
+            end = clock();
+            double searchingTime = getTimeInSecs(begin, end);
+            std::cout << "Time of searching using index: " << searchingTime << " s" << std::endl;
+            searchingMean += searchingTime;
+            searchingSquaresSum += searchingTime * searchingTime;
+
+            EXPECT_EQ(expectedCount, occurrences.size());
+            std::cout << "Found: " << occurrences.size() << std::endl;
+
+            treeMaxSearchDepth = indexer.getMaxSearchDepth();
+            std::cout << "Tree's max search depth: " << treeMaxSearchDepth << std::endl;
+            writeOccurrencesToFile(occurrences, indexOutFileName);
+        }
+
+        indexingMean /= TESTS_COUNT;
+        indexingSquaresSum /= TESTS_COUNT;
+
+        searchingMean /= TESTS_COUNT;
+        searchingSquaresSum /= TESTS_COUNT;
+
+        double indexingDispersion = TESTS_COUNT / (TESTS_COUNT - 1)
+                                    * (indexingSquaresSum - indexingMean * indexingMean);
+        double searchingDispersion = TESTS_COUNT / (TESTS_COUNT - 1)
+                                     * (searchingSquaresSum - searchingMean * searchingMean);
+
+        outputCsvFile << ORDERS[i] << ";" << indexingMean << ";" << indexingDispersion << ";"
+                      << searchingMean << ";" << searchingDispersion << ";" << treeMaxSearchDepth << std::endl;
+    }
+
+    outputCsvFile.close();
+}
+
 std::list<std::wstring> BStarTreeBasedIndexTest::searchLinearly(std::wstring& name, std::string fileName)
 {
     std::wifstream file(fileName);
@@ -263,6 +346,24 @@ TEST_F(BStarTreeBasedIndexTest, IndexerWithDifferentParamsTest2)
     testIndexWithDifferentParams(
             "Hospital_log.csv", "BTree_Hospital_log.xibt",
             "Occurrences_index_Hospital_log.txt", "Results_BStarTree_Hospital_log.csv",
+            L"1e consult poliklinisch", 1136
+    );
+}
+
+TEST_F(BStarTreeBasedIndexTest, IndexerWithDifferentParamsAndAggregatesTest1)
+{
+    testIndexWithDifferentParamsAndCountAggregates(
+            "University_and_books.csv", "BTree_University_and_books.xibt",
+            "Occurrences_index_University_and_books.txt", "Results_Aggr_BStarTree_University_and_books.csv",
+            L"Подбельский", 3
+    );
+}
+
+TEST_F(BStarTreeBasedIndexTest, IndexerWithDifferentParamsAndAggregatesTest2)
+{
+    testIndexWithDifferentParamsAndCountAggregates(
+            "Hospital_log.csv", "BTree_Hospital_log.xibt",
+            "Occurrences_index_Hospital_log.txt", "Results_Aggr_BStarTree_Hospital_log.csv",
             L"1e consult poliklinisch", 1136
     );
 }
