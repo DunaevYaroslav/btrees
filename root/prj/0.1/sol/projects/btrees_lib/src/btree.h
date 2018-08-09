@@ -898,7 +898,12 @@ public:
      */
     UInt getRightSplitProductKeys() const { return _rightSplitProductKeys; }
 
-protected:
+    UInt getShortRightSplitProductKeys() const { return _shortRightSplitProductKeys; }
+
+    UInt getRightSplitProductKeys(bool isShort) const { return isShort? _shortRightSplitProductKeys : _rightSplitProductKeys; }
+
+
+    protected:
 
     virtual void insertNonFull(const Byte* k, PageWrapper& currentNode) override;
 
@@ -913,7 +918,8 @@ protected:
      * \param middle The page that will contain the new middle child.
      * \param right The right child.
      */
-    void splitChildren(PageWrapper& node, UShort iLeft, PageWrapper& left, PageWrapper& middle, PageWrapper& right);
+    void splitChildren(PageWrapper& node, UShort iLeft, PageWrapper& left,
+            PageWrapper& middle, PageWrapper& right, bool isShort);
 
     /**
      * \brief Shares keys from the child to its left sibling to make this child non-full and inserts the key \param k.
@@ -924,7 +930,7 @@ protected:
      * @param child The child.
      * @param left The child's left sibling.
      */
-    void shareKeysWithLeftChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
+    bool shareKeysWithLeftChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
             PageWrapper& child, PageWrapper& left);
 
     /**
@@ -936,7 +942,7 @@ protected:
      * @param child The child.
      * @param right The child's right sibling.
      */
-    void shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
+    bool shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
             PageWrapper& child, PageWrapper& right);
 
     virtual void setOrder(UShort order, UShort recSize) override;
@@ -964,6 +970,8 @@ protected:
      * \brief The keys number for the right split product in the B*-tree.
      */
     UInt _rightSplitProductKeys;
+
+    UInt _shortRightSplitProductKeys;
 
 };
 

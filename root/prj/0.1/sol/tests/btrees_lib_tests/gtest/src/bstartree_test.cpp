@@ -370,15 +370,15 @@ TEST_F(BStarTreeTest, InsertS7)
 
         for (Byte j : values)
         {
-            for (Byte k = 0; k <= /*j*/ 3; ++k)
+            for (Byte k = 0; k <= j; ++k)
             {
                 bt.insert(&j);
                 Byte* searched = bt.search(&j);
                 EXPECT_TRUE(searched != nullptr);
             }
 
-//            if (j == 50)
-//                break;
+            if (j == 50)
+                break;
         }
     }
 
@@ -386,7 +386,7 @@ TEST_F(BStarTreeTest, InsertS7)
     {
         std::list<Byte*> keys;
 
-        EXPECT_EQ(/*i + 1*/ 4, bt.searchAll(&i, keys));
+        EXPECT_EQ(i + 1, bt.searchAll(&i, keys));
         EXPECT_EQ(i, *keys.back());
 
         clearKeysList(keys);

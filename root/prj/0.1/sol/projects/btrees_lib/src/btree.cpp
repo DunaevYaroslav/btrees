@@ -762,7 +762,6 @@ void BaseBTree::writePageInternal(UInt pnum, const Byte* dst)
 {
     gotoPage(pnum);
     _stream->write((const char*)dst, getNodePageSize());
-    _stream->flush(); // TODO
 }
 
 void BaseBTree::gotoPage(UInt pnum)
@@ -1517,11 +1516,8 @@ void BaseBStarTree::insertNonFull(const Byte* k, PageWrapper& currentNode)
                 leftSibling.readPageFromChild(currentNode, i - 1);
                 UShort leftSiblingKeysNum = leftSibling.getKeysNum();
 
-                if (!leftSibling.isFull())
-                {
-                    shareKeysWithLeftChildAndInsert(k, currentNode, i, child, leftSibling);
+                if (!leftSibling.isFull() && shareKeysWithLeftChildAndInsert(k, currentNode, i, child, leftSibling))
                     return;
-                }
             }
 
             if (i < keysNum)
@@ -1529,18 +1525,15 @@ void BaseBStarTree::insertNonFull(const Byte* k, PageWrapper& currentNode)
                 rightSibling.readPageFromChild(currentNode, i + 1);
                 UShort rightSiblingKeysNum = rightSibling.getKeysNum();
 
-                if (!rightSibling.isFull())
-                {
-                    shareKeysWithRightChildAndInsert(k, currentNode, i, child, rightSibling);
+                if (!rightSibling.isFull() && shareKeysWithRightChildAndInsert(k, currentNode, i, child, rightSibling))
                     return;
-                }
             }
 
             PageWrapper middle(this);
 
             if (i > 0)
             {
-                splitChildren(currentNode, i - 1, leftSibling, middle, child);
+                splitChildren(currentNode, i - 1, leftSibling, middle, child, !leftSibling.isFull());
                 if (c->compare(currentNode.getKey(i), k, getRecSize()))
                     insertNonFull(k, child);
                 else if (c->compare(currentNode.getKey(i - 1), k, getRecSize()))
@@ -1550,7 +1543,7 @@ void BaseBStarTree::insertNonFull(const Byte* k, PageWrapper& currentNode)
             }
             else
             {
-                splitChildren(currentNode, i, child, middle, rightSibling);
+                splitChildren(currentNode, i, child, middle, rightSibling, !rightSibling.isFull());
                 if (c->compare(currentNode.getKey(i + 1), k, getRecSize()))
                     insertNonFull(k, rightSibling);
                 else if (c->compare(currentNode.getKey(i), k, getRecSize()))
@@ -1605,7 +1598,7 @@ void BaseBStarTree::splitChild(PageWrapper& node, UShort iChild, PageWrapper& le
 }
 
 void BaseBStarTree::splitChildren(PageWrapper& node, UShort iLeft,
-        PageWrapper& left, PageWrapper& middle, PageWrapper& right)
+        PageWrapper& left, PageWrapper& middle, PageWrapper& right, bool isShort)
 {
     if (node.isFull())
         throw std::domain_error("A parent node is full, so its children can't be splitted");
@@ -1650,13 +1643,13 @@ void BaseBStarTree::splitChildren(PageWrapper& node, UShort iLeft,
         node.copyCursors(middle.getCursorPtr(0), &cursors[(getLeftSplitProductKeys() + 1) * CURSOR_SZ],
                 getMiddleSplitProductKeys() + 1);
 
-    right.setKeyNum(getRightSplitProductKeys());
+    right.setKeyNum(getRightSplitProductKeys(isShort));
     node.copyKeys(right.getKey(0), &keys[(getLeftSplitProductKeys() + getMiddleSplitProductKeys() + 2) * _recSize],
-            getRightSplitProductKeys());
+            getRightSplitProductKeys(isShort));
     if (!isLeaf)
         node.copyCursors(right.getCursorPtr(0),
                 &cursors[(getLeftSplitProductKeys() + getMiddleSplitProductKeys() + 2) * CURSOR_SZ],
-                getRightSplitProductKeys() + 1);
+                getRightSplitProductKeys(isShort) + 1);
 
     node.copyKey(node.getKey(iLeft), &keys[getLeftSplitProductKeys() * _recSize]);
 
@@ -1683,7 +1676,7 @@ void BaseBStarTree::splitChildren(PageWrapper& node, UShort iLeft,
         delete[] cursors;
 }
 
-void BaseBStarTree::shareKeysWithLeftChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
+bool BaseBStarTree::shareKeysWithLeftChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
         PageWrapper& child, PageWrapper& left)
 {
     if (!child.isFull())
@@ -1710,12 +1703,7 @@ void BaseBStarTree::shareKeysWithLeftChildAndInsert(const Byte* k, PageWrapper& 
     UShort childLeftKeys = childKeysNum - movedKeys;
 
     if (newLeftSiblingKeysNum == getMaxKeys() && movedKeys == 1 && c->compare(k, child.getKey(0), _recSize))
-    {
-        insertNonFull(node.getKey(iChild - 1), left);
-        node.copyKey(node.getKey(iChild - 1), k);
-        node.writePage();
-        return;
-    }
+        return false;
 
     left.setKeyNum(newLeftSiblingKeysNum);
 
@@ -1745,9 +1733,11 @@ void BaseBStarTree::shareKeysWithLeftChildAndInsert(const Byte* k, PageWrapper& 
         insertNonFull(k, left);
     else
         insertNonFull(k, child);
+
+    return true;
 }
 
-void BaseBStarTree::shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
+bool BaseBStarTree::shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
         PageWrapper& child, PageWrapper& right)
 {
     if (!child.isFull())
@@ -1775,12 +1765,7 @@ void BaseBStarTree::shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper&
 
     if (newRightSiblingKeysNum == getMaxKeys() && movedKeys == 1
             && c->compare(child.getKey(childKeysNum - 1), k, _recSize))
-    {
-        insertNonFull(node.getKey(iChild), right);
-        node.copyKey(node.getKey(iChild), k);
-        node.writePage();
-        return;
-    }
+        return false;
 
     right.setKeyNum(newRightSiblingKeysNum);
 
@@ -1809,6 +1794,8 @@ void BaseBStarTree::shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper&
         insertNonFull(k, right);
     else
         insertNonFull(k, child);
+
+    return true;
 }
 
 void BaseBStarTree::setOrder(UShort order, UShort recSize)
@@ -1824,6 +1811,7 @@ void BaseBStarTree::setOrder(UShort order, UShort recSize)
     _leftSplitProductKeys = (2 * _order - 1) / 3;
     _middleSplitProductKeys = 2 * _order / 3;
     _rightSplitProductKeys = (2 * _order + 1) / 3;
+    _shortRightSplitProductKeys = _rightSplitProductKeys - 1;
 
     UInt maxPossibleNodeKeys = std::max(_maxKeys, _maxRootKeys);
 
