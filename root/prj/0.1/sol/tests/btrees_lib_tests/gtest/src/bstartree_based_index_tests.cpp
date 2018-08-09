@@ -18,7 +18,7 @@
 
 using namespace xi;
 
-static const int ORDERS[] = { 6, 7, 8, 9, 10, 20, 30, 40, 50, 250, 450, 650, 850,
+static const int ORDERS[] = { /*4, 5,*/ 6, 7, 8, 9, 10, 20, 30, 40, 50, 250, 450, 650, 850,
         1050, 1250, 1450, 1650, 1850, 2050 };
 
 static const int ORDERS_LENGTH = sizeof(ORDERS) / sizeof(int);
@@ -34,7 +34,7 @@ class BStarTreeBasedIndexTest : public ::testing::Test
 public:
 
     /**
-     * The B-tree's order.
+     * The B*-tree's order.
      */
     static const int ORDER = 50;
 
@@ -359,7 +359,7 @@ TEST_F(BStarTreeBasedIndexTest, IndexerWithDifferentParamsAndAggregatesTest1)
     );
 }
 
-TEST_F(BStarTreeBasedIndexTest, IndexerWithDifferentParamsAndAggregatesTest2)
+TEST_F(BStarTreeBasedIndexTest, DISABLED_IndexerWithDifferentParamsAndAggregatesTest2) // TODO: Enable.
 {
     testIndexWithDifferentParamsAndCountAggregates(
             "Hospital_log.csv", "BTree_Hospital_log.xibt",

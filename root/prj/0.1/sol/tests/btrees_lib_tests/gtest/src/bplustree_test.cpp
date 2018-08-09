@@ -18,6 +18,14 @@ using namespace xi;
 
 /** \brief Тестовый класс для тестирования открытых интерфейсов B-tree. */
 class BPlusTreeTest : public ::testing::Test {
+
+public:
+
+    /**
+     * The B+-tree's order.
+     */
+    static const int ORDER = 2;
+
 public:
     //BTreeTest()
     //    : _dumper(DUMP_EVENTLOG_PUB_FN, DUMP_IMGS_PUB_PATH)
@@ -77,7 +85,7 @@ TEST_F(BPlusTreeTest, InsertS1)
     std::string& fn = getFn("InsertS1.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, 2, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, ORDER, 1, &comparator, fn);
 
 
     Byte k = 0x03;
@@ -144,7 +152,7 @@ TEST_F(BPlusTreeTest, InsertS2)
     std::string& fn = getFn("InsertS2.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, 2, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, ORDER, 1, &comparator, fn);
 
 
     Byte k = 0x03;
@@ -232,7 +240,7 @@ TEST_F(BPlusTreeTest, InsertS3)
     std::string& fn = getFn("InsertS3.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, 2, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, ORDER, 1, &comparator, fn);
 
 
     Byte els[] = { 0x01, 0x11, 0x09, 0x05, 0x07, 0x03, 0x03 };
@@ -273,7 +281,7 @@ TEST_F(BPlusTreeTest, Reusing1)
     std::string& fn = getFn("Reusing1.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, 2, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, ORDER, 1, &comparator, fn);
     BaseBTree::PageWrapper wp(bt.getTree());
 
     wp.allocPage(3, false);
@@ -291,7 +299,7 @@ TEST_F(BPlusTreeTest, Reusing2)
     std::string& fn = getFn("Reusing2.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, 2, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, ORDER, 1, &comparator, fn);
     BaseBTree::PageWrapper wp(bt.getTree());
 
     wp.allocPage(3, false);
@@ -317,7 +325,7 @@ TEST_F(BPlusTreeTest, Reusing3)
     std::string& fn = getFn("Reusing3.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, 2, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, ORDER, 1, &comparator, fn);
     BaseBTree::PageWrapper wp(bt.getTree());
 
     wp.allocNewRootPage();
@@ -329,7 +337,7 @@ TEST_F(BPlusTreeTest, Reusing4)
     std::string& fn = getFn("Reusing3.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, 2, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, ORDER, 1, &comparator, fn);
     BaseBTree::PageWrapper wp(bt.getTree());
 
     wp.allocPage(3, false);
@@ -349,7 +357,7 @@ TEST_F(BPlusTreeTest, Remove1)
     std::string& fn = getFn("Remove1.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, 2, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, ORDER, 1, &comparator, fn);
 
     Byte els[] = { 0x01, 0x11, 0x09, 0x05, 0x07, 0x03, 0x03 };
     for (int i = 0; i < sizeof(els) / sizeof(els[0]); ++i)
@@ -400,7 +408,7 @@ TEST_F(BPlusTreeTest, Remove2)
     std::string& fn = getFn("Remove2.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, 2, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, ORDER, 1, &comparator, fn);
 
     Byte els[] = { 0x01, 0x11, 0x09, 0x05, 0x07, 0x03, 0x03 };
     for (int i = 0; i < sizeof(els) / sizeof(els[0]); ++i)
@@ -452,7 +460,7 @@ TEST_F(BPlusTreeTest, Remove3)
     std::string& fn = getFn("Remove3.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, 2, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, ORDER, 1, &comparator, fn);
 
     Byte els[] = { 0x01, 0x11, 0x09, 0x05, 0x07, 0x03, 0x03 };
     for (int i = 0; i < sizeof(els) / sizeof(els[0]); ++i)
@@ -511,7 +519,7 @@ TEST_F(BPlusTreeTest, Remove4)
     std::string& fn = getFn("Remove4.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, 2, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, ORDER, 1, &comparator, fn);
 
     Byte k = 0x03;
     bt.insert(&k);
@@ -546,7 +554,7 @@ TEST_F(BPlusTreeTest, Remove5)
     std::string& fn = getFn("Remove5.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, 2, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, ORDER, 1, &comparator, fn);
 
     Byte els[] = { 0x01, 0x11, 0x09, 0x05, 0x07, 0x03, 0x03 };
     for (int i = 0; i < sizeof(els) / sizeof(els[0]); ++i)
@@ -606,7 +614,7 @@ TEST_F(BPlusTreeTest, Remove6)
     std::string& fn = getFn("Remove6.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, 2, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, ORDER, 1, &comparator, fn);
 
     Byte els[] = { 0x01, 0x11, 0x09, 0x05, 0x07, 0x03, 0x03 };
     for (int i = 0; i < sizeof(els) / sizeof(els[0]); ++i)
@@ -668,7 +676,7 @@ TEST_F(BPlusTreeTest, RemoveAndReuse1)
     std::string& fn = getFn("RemoveAndReuse1.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, 2, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, ORDER, 1, &comparator, fn);
 
 
     Byte els[] = { 0x01, 0x11, 0x09, 0x05, 0x07, 0x03, 0x03 };
@@ -762,7 +770,7 @@ TEST_F(BPlusTreeTest, RemoveAndReuse2)
     std::string& fn = getFn("RemoveAndReuse2.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, 2, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, ORDER, 1, &comparator, fn);
 
 
     Byte els[] = { 0x01, 0x11, 0x09, 0x05, 0x07, 0x03, 0x03 };

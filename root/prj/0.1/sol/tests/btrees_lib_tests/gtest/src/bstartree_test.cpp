@@ -18,6 +18,14 @@ using namespace xi;
 
 /** \brief Тестовый класс для тестирования открытых интерфейсов B-tree. */
 class BStarTreeTest : public ::testing::Test {
+
+public:
+
+    /**
+     * The B*-tree's order.
+     */
+    static const int ORDER = 4;
+
 public:
     //BTreeTest()
     //    : _dumper(DUMP_EVENTLOG_PUB_FN, DUMP_IMGS_PUB_PATH)
@@ -77,7 +85,7 @@ TEST_F(BStarTreeTest, InsertS1)
     std::string& fn = getFn("InsertS1.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, 6, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, ORDER, 1, &comparator, fn);
 
 
     Byte k = 0x03;
@@ -144,7 +152,7 @@ TEST_F(BStarTreeTest, InsertS2)
     std::string& fn = getFn("InsertS2.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, 6, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, ORDER, 1, &comparator, fn);
 
 
     Byte k = 0x03;
@@ -232,7 +240,7 @@ TEST_F(BStarTreeTest, InsertS3)
     std::string& fn = getFn("InsertS3.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, 6, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, ORDER, 1, &comparator, fn);
 
 
     Byte els[] = { 0x01, 0x11, 0x09, 0x05, 0x07, 0x03, 0x03 };
@@ -271,7 +279,7 @@ TEST_F(BStarTreeTest, InsertS4)
     std::string& fn = getFn("InsertS4.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, 6, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, ORDER, 1, &comparator, fn);
 
 
     Byte els[] = { 0x01, 0x11, 0x09, 0x05, 0x07, 0x03, 0x03, 0x06, 0x04, 0x10, 0x08, 0x12 };
@@ -310,7 +318,7 @@ TEST_F(BStarTreeTest, InsertS5)
     std::string& fn = getFn("InsertS5.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, 6, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, ORDER, 1, &comparator, fn);
 
 
     for (Byte i = 0; i < 100; ++i)
@@ -332,7 +340,7 @@ TEST_F(BStarTreeTest, InsertS6)
     std::string& fn = getFn("InsertS6.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, 6, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, ORDER, 1, &comparator, fn);
 
 
     for (Byte i = 100; i > 0; --i)
@@ -349,6 +357,42 @@ TEST_F(BStarTreeTest, InsertS6)
     }
 }
 
+TEST_F(BStarTreeTest, InsertS7)
+{
+    std::string& fn = getFn("InsertS7.xibt");
+
+    ByteComparator comparator;
+    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, ORDER, 1, &comparator, fn);
+
+    for (Byte i = 0; i <= 50; ++i)
+    {
+        Byte values[] = {i, (Byte) (100 - i)};
+
+        for (Byte j : values)
+        {
+            for (Byte k = 0; k <= /*j*/ 3; ++k)
+            {
+                bt.insert(&j);
+                Byte* searched = bt.search(&j);
+                EXPECT_TRUE(searched != nullptr);
+            }
+
+//            if (j == 50)
+//                break;
+        }
+    }
+
+    for (Byte i = 0; i <= 100; ++i)
+    {
+        std::list<Byte*> keys;
+
+        EXPECT_EQ(/*i + 1*/ 4, bt.searchAll(&i, keys));
+        EXPECT_EQ(i, *keys.back());
+
+        clearKeysList(keys);
+    }
+}
+
 #ifdef BTREE_WITH_REUSING_FREE_PAGES
 
 TEST_F(BStarTreeTest, Reusing1)
@@ -356,7 +400,7 @@ TEST_F(BStarTreeTest, Reusing1)
     std::string& fn = getFn("Reusing1.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, 6, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, ORDER, 1, &comparator, fn);
     BaseBTree::PageWrapper wp(bt.getTree());
 
     wp.allocPage(3, false);
@@ -374,7 +418,7 @@ TEST_F(BStarTreeTest, Reusing2)
     std::string& fn = getFn("Reusing2.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, 6, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, ORDER, 1, &comparator, fn);
     BaseBTree::PageWrapper wp(bt.getTree());
 
     wp.allocPage(3, false);
@@ -400,7 +444,7 @@ TEST_F(BStarTreeTest, Reusing3)
     std::string& fn = getFn("Reusing3.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, 6, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, ORDER, 1, &comparator, fn);
     BaseBTree::PageWrapper wp(bt.getTree());
 
     wp.allocNewRootPage();
@@ -412,7 +456,7 @@ TEST_F(BStarTreeTest, Reusing4)
     std::string& fn = getFn("Reusing3.xibt");
 
     ByteComparator comparator;
-    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, 6, 1, &comparator, fn);
+    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, ORDER, 1, &comparator, fn);
     BaseBTree::PageWrapper wp(bt.getTree());
 
     wp.allocPage(3, false);
@@ -432,7 +476,7 @@ TEST_F(BStarTreeTest, Reusing4)
 //    std::string& fn = getFn("Remove1.xibt");
 //
 //    ByteComparator comparator;
-//    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, 6, 1, &comparator, fn);
+//    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, ORDER, 1, &comparator, fn);
 //
 //    Byte els[] = { 0x01, 0x11, 0x09, 0x05, 0x07, 0x03, 0x03 };
 //    for (int i = 0; i < sizeof(els) / sizeof(els[0]); ++i)
@@ -483,7 +527,7 @@ TEST_F(BStarTreeTest, Reusing4)
 //    std::string& fn = getFn("Remove2.xibt");
 //
 //    ByteComparator comparator;
-//    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, 6, 1, &comparator, fn);
+//    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, ORDER, 1, &comparator, fn);
 //
 //    Byte els[] = { 0x01, 0x11, 0x09, 0x05, 0x07, 0x03, 0x03 };
 //    for (int i = 0; i < sizeof(els) / sizeof(els[0]); ++i)
@@ -535,7 +579,7 @@ TEST_F(BStarTreeTest, Reusing4)
 //    std::string& fn = getFn("Remove3.xibt");
 //
 //    ByteComparator comparator;
-//    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, 6, 1, &comparator, fn);
+//    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, ORDER, 1, &comparator, fn);
 //
 //    Byte els[] = { 0x01, 0x11, 0x09, 0x05, 0x07, 0x03, 0x03 };
 //    for (int i = 0; i < sizeof(els) / sizeof(els[0]); ++i)
@@ -594,7 +638,7 @@ TEST_F(BStarTreeTest, Reusing4)
 //    std::string& fn = getFn("Remove4.xibt");
 //
 //    ByteComparator comparator;
-//    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, 6, 1, &comparator, fn);
+//    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, ORDER, 1, &comparator, fn);
 //
 //    Byte k = 0x03;
 //    bt.insert(&k);
@@ -629,7 +673,7 @@ TEST_F(BStarTreeTest, Reusing4)
 //    std::string& fn = getFn("Remove5.xibt");
 //
 //    ByteComparator comparator;
-//    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, 6, 1, &comparator, fn);
+//    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, ORDER, 1, &comparator, fn);
 //
 //    Byte els[] = { 0x01, 0x11, 0x09, 0x05, 0x07, 0x03, 0x03 };
 //    for (int i = 0; i < sizeof(els) / sizeof(els[0]); ++i)
@@ -689,7 +733,7 @@ TEST_F(BStarTreeTest, Reusing4)
 //    std::string& fn = getFn("Remove6.xibt");
 //
 //    ByteComparator comparator;
-//    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, 6, 1, &comparator, fn);
+//    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, ORDER, 1, &comparator, fn);
 //
 //    Byte els[] = { 0x01, 0x11, 0x09, 0x05, 0x07, 0x03, 0x03 };
 //    for (int i = 0; i < sizeof(els) / sizeof(els[0]); ++i)
@@ -751,7 +795,7 @@ TEST_F(BStarTreeTest, Reusing4)
 //    std::string& fn = getFn("RemoveAndReuse1.xibt");
 //
 //    ByteComparator comparator;
-//    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, 6, 1, &comparator, fn);
+//    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, ORDER, 1, &comparator, fn);
 //
 //
 //    Byte els[] = { 0x01, 0x11, 0x09, 0x05, 0x07, 0x03, 0x03 };
@@ -845,7 +889,7 @@ TEST_F(BStarTreeTest, Reusing4)
 //    std::string& fn = getFn("RemoveAndReuse2.xibt");
 //
 //    ByteComparator comparator;
-//    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, 6, 1, &comparator, fn);
+//    FileBaseBTree bt(BaseBTree::TreeType::B_STAR_TREE, ORDER, 1, &comparator, fn);
 //
 //
 //    Byte els[] = { 0x01, 0x11, 0x09, 0x05, 0x07, 0x03, 0x03 };

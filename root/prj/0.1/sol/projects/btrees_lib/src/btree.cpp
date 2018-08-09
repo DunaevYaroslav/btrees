@@ -762,6 +762,7 @@ void BaseBTree::writePageInternal(UInt pnum, const Byte* dst)
 {
     gotoPage(pnum);
     _stream->write((const char*)dst, getNodePageSize());
+    _stream->flush(); // TODO
 }
 
 void BaseBTree::gotoPage(UInt pnum)
@@ -1712,6 +1713,7 @@ void BaseBStarTree::shareKeysWithLeftChildAndInsert(const Byte* k, PageWrapper& 
     {
         insertNonFull(node.getKey(iChild - 1), left);
         node.copyKey(node.getKey(iChild - 1), k);
+        node.writePage();
         return;
     }
 
@@ -1776,6 +1778,7 @@ void BaseBStarTree::shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper&
     {
         insertNonFull(node.getKey(iChild), right);
         node.copyKey(node.getKey(iChild), k);
+        node.writePage();
         return;
     }
 

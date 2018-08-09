@@ -358,7 +358,7 @@ TEST_F(BTreeBasedIndexTest, IndexerWithDifferentParamsAndAggregatesTest1)
     );
 }
 
-TEST_F(BTreeBasedIndexTest, IndexerWithDifferentParamsAndAggregatesTest2)
+TEST_F(BTreeBasedIndexTest, DISABLED_IndexerWithDifferentParamsAndAggregatesTest2) // TODO: Enable.
 {
     testIndexWithDifferentParamsAndCountAggregates(
             "Hospital_log.csv", "BTree_Hospital_log.xibt",
