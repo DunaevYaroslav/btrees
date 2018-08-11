@@ -1798,6 +1798,97 @@ bool BaseBStarTree::shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper&
     return true;
 }
 
+bool BaseBStarTree::remove(const Byte* k, PageWrapper& currentPage)
+{
+    int i;
+    UShort keysNum = currentPage.getKeysNum();
+
+    for(i = 0; i < keysNum && _comparator->compare(currentPage.getKey(i), k, _recSize); ++i) ;
+
+    if(i < keysNum && _comparator->isEqual(k, currentPage.getKey(i), _recSize))
+    {
+        if(currentPage.isRoot())
+            return removeByKeyNum(i, _rootPage);
+        else
+            return removeByKeyNum(i, currentPage);
+    }
+
+    else if(currentPage.isLeaf())
+        return false;
+
+    PageWrapper child(this);
+    PageWrapper leftNeighbour(this);
+    PageWrapper rightNeighbour(this);
+    if(prepareSubtree(i, currentPage, child, leftNeighbour, rightNeighbour))
+        return remove(k, leftNeighbour);
+    else
+        return remove(k, child);
+}
+
+bool BaseBStarTree::removeByKeyNum(UShort keyNum, PageWrapper& currentPage)
+{
+    UShort keysNum = currentPage.getKeysNum();
+    Byte* k = currentPage.getKey(keyNum);
+
+    if(currentPage.isLeaf())
+    {
+        for(int j = keyNum; j < keysNum - 1; ++j)
+            currentPage.copyKey(currentPage.getKey(j), currentPage.getKey(j + 1));
+
+        currentPage.setKeyNum(keysNum - 1);
+
+        currentPage.writePage();
+
+        return true;
+    }
+
+    const Byte* replace = nullptr;
+
+    PageWrapper leftChild(this), rightChild(this);
+    leftChild.readPageFromChild(currentPage, keyNum);
+    if(leftChild.getKeysNum() >= _minKeys + 1)
+        replace = getAndRemoveMaxKey(leftChild);
+
+    if(replace == nullptr)
+    {
+        rightChild.readPageFromChild(currentPage, keyNum + 1);
+        if(rightChild.getKeysNum() >= _minKeys + 1)
+            replace = getAndRemoveMinKey(rightChild);
+    }
+
+    if(replace != nullptr)
+    {
+        currentPage.copyKey(currentPage.getKey(keyNum), replace);
+        delete[] replace;
+
+        currentPage.writePage();
+
+        return true;
+    }
+
+    // TODO: sharing keys and/or merging nodes.
+
+    if(leftChild.isRoot())
+        removeByKeyNum(_maxKeys / 2, _rootPage);
+    else
+        removeByKeyNum(_maxKeys / 2, leftChild);
+
+    return true;
+}
+
+bool BaseBStarTree::prepareSubtree(UShort cursorNum, PageWrapper &currentPage,
+        PageWrapper &child, PageWrapper &leftNeighbour,
+        PageWrapper &rightNeighbour)
+{
+    return false; // TODO: implement method.
+}
+
+void BaseBStarTree::mergeChildren(PageWrapper &leftChild, PageWrapper &middleChild,
+        PageWrapper &rightChild, PageWrapper &currentPage, UShort medianNum)
+{
+    // TODO: implement method.
+}
+
 void BaseBStarTree::setOrder(UShort order, UShort recSize)
 {
     _order = order;
