@@ -1876,15 +1876,15 @@ bool BaseBStarTree::removeByKeyNum(UShort keyNum, PageWrapper& currentPage)
     return true;
 }
 
-bool BaseBStarTree::prepareSubtree(UShort cursorNum, PageWrapper &currentPage,
-        PageWrapper &child, PageWrapper &leftNeighbour,
-        PageWrapper &rightNeighbour)
+bool BaseBStarTree::prepareSubtree(UShort cursorNum, PageWrapper& currentPage,
+        PageWrapper& child, PageWrapper& leftNeighbour,
+        PageWrapper& rightNeighbour)
 {
     return false; // TODO: implement method.
 }
 
-void BaseBStarTree::mergeChildren(PageWrapper &leftChild, PageWrapper &middleChild,
-        PageWrapper &rightChild, PageWrapper &currentPage, UShort medianNum)
+void BaseBStarTree::mergeChildren(PageWrapper& leftChild, PageWrapper& middleChild,
+        PageWrapper& rightChild, PageWrapper& currentPage, UShort medianNum)
 {
     // TODO: implement method.
 }
