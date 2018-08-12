@@ -858,13 +858,14 @@ public:
 
 //    virtual int removeAll(const Byte* k, PageWrapper& currentPage) override;
 
-    virtual bool removeByKeyNum(UShort keyNum, PageWrapper& currentPage) override;
+//    virtual bool removeByKeyNum(UShort keyNum, PageWrapper& currentPage) override;
 
     virtual bool prepareSubtree(UShort cursorNum, PageWrapper& currentPage, PageWrapper& child,
             PageWrapper& leftNeighbour, PageWrapper& rightNeighbour) override;
 
     void mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& middleChild,
-            BaseBTree::PageWrapper& rightChild, BaseBTree::PageWrapper& currentPage, UShort medianNum);
+            BaseBTree::PageWrapper& rightChild, BaseBTree::PageWrapper& currentPage,
+            UShort leftMedianNum, UShort rightMedianNum);
 
 //    virtual const Byte* getAndRemoveMaxKey(PageWrapper& pw) override;
 //
