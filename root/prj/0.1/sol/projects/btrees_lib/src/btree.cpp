@@ -1907,12 +1907,12 @@ bool BaseBStarTree::prepareSubtree(UShort cursorNum, PageWrapper& currentPage,
 
         if(cursorNum >= 1)
         {
-            BaseBTree::mergeChildren(leftNeighbour, child, currentPage, cursorNum - 1);
+            mergeChildren(leftNeighbour, child, currentPage, cursorNum - 1);
 
             return true;
         }
 
-        BaseBTree::mergeChildren(child, rightNeighbour, currentPage, cursorNum);
+        mergeChildren(child, rightNeighbour, currentPage, cursorNum);
 
         return false;
     }
@@ -1920,10 +1920,125 @@ bool BaseBStarTree::prepareSubtree(UShort cursorNum, PageWrapper& currentPage,
     return false;
 }
 
+void BaseBStarTree::mergeChildren(PageWrapper &leftChild, PageWrapper &rightChild,
+        PageWrapper &currentPage, UShort medianNum)
+{
+    UShort parentKeysNum = currentPage.getKeysNum();
+    UShort keysNum = leftChild.getKeysNum() + rightChild.getKeysNum() + 1;
+    UShort oldLeftKeysNum = leftChild.getKeysNum();
+    Byte* median = currentPage.getKey(medianNum);
+
+    leftChild.setKeyNum(keysNum);
+
+    leftChild.copyKey(leftChild.getKey(oldLeftKeysNum), median);
+
+    leftChild.copyKeys(leftChild.getKey(oldLeftKeysNum + 1), rightChild.getKey(0), rightChild.getKeysNum());
+    leftChild.copyCursors(leftChild.getCursorPtr(oldLeftKeysNum + 1), rightChild.getCursorPtr(0),
+            rightChild.getKeysNum() + 1);
+
+    for(int j = medianNum; j < parentKeysNum - 1; ++j)
+    {
+        currentPage.copyKey(currentPage.getKey(j), currentPage.getKey(j + 1));
+        currentPage.copyCursors(currentPage.getCursorPtr(j + 1), currentPage.getCursorPtr(j + 2), 1);
+    }
+
+    leftChild.writePage();
+
+    if(currentPage.getKeysNum() == 1)
+    {
+        leftChild.setAsRoot(true);
+
+#ifdef BTREE_WITH_REUSING_FREE_PAGES
+
+        markPageFree(currentPage.getPageNum());
+
+#endif
+
+        loadRootPage();
+    }
+    else
+    {
+        currentPage.setKeyNum(parentKeysNum - 1);
+        currentPage.writePage();
+    }
+
+
+#ifdef BTREE_WITH_REUSING_FREE_PAGES
+
+    markPageFree(rightChild.getPageNum());
+
+#endif
+
+}
+
 void BaseBStarTree::mergeChildren(PageWrapper& leftChild, PageWrapper& middleChild,
         PageWrapper& rightChild, PageWrapper& currentPage, UShort leftMedianNum, UShort rightMedianNum)
 {
-    // TODO: implement method.
+    bool isLeaf = leftChild.isLeaf();
+
+    UShort keysNum = leftChild.getKeysNum() + middleChild.getKeysNum() + rightChild.getKeysNum() + 2;
+    Byte* keys = new Byte[keysNum * _recSize];
+    Byte* cursors = isLeaf ? nullptr : new Byte[(keysNum + 1) * CURSOR_SZ];
+
+    currentPage.copyKeys(&keys[0], leftChild.getKey(0), leftChild.getKeysNum());
+    if (!isLeaf)
+        currentPage.copyCursors(&cursors[0], leftChild.getCursorPtr(0), leftChild.getKeysNum() + 1);
+
+    currentPage.copyKey(&keys[leftChild.getKeysNum() * _recSize], currentPage.getKey(leftMedianNum));
+
+    currentPage.copyKeys(&keys[(leftChild.getKeysNum() + 1) * _recSize],
+            middleChild.getKey(0), middleChild.getKeysNum());
+    if (!isLeaf)
+        currentPage.copyCursors(&cursors[(leftChild.getKeysNum() + 1) * CURSOR_SZ], middleChild.getCursorPtr(0),
+                middleChild.getKeysNum() + 1);
+
+    currentPage.copyKey(&keys[(leftChild.getKeysNum() + middleChild.getKeysNum() + 1) * _recSize],
+            currentPage.getKey(rightMedianNum));
+
+    currentPage.copyKeys(&keys[(leftChild.getKeysNum() + middleChild.getKeysNum() + 2) * _recSize],
+            rightChild.getKey(0), rightChild.getKeysNum());
+    if (!isLeaf)
+        currentPage.copyCursors(&cursors[(leftChild.getKeysNum() + rightChild.getKeysNum() + 2)],
+                rightChild.getCursorPtr(0), rightChild.getKeysNum() + 1);
+
+    UShort rightChildKeysNum = keysNum / 2;
+    UShort leftChildKeysNum = keysNum - rightChildKeysNum - 1;
+
+    leftChild.setKeyNum(leftChildKeysNum);
+
+    currentPage.copyKeys(leftChild.getKey(0), &keys[0], leftChildKeysNum);
+    if (!isLeaf)
+        currentPage.copyCursors(leftChild.getCursorPtr(0), &cursors[0], leftChildKeysNum + 1);
+
+    middleChild.setKeyNum(rightChildKeysNum);
+
+    currentPage.copyKeys(middleChild.getKey(0), &keys[leftChildKeysNum + 1], rightChildKeysNum);
+    if (!isLeaf)
+        currentPage.copyCursors(middleChild.getCursorPtr(0), &cursors[leftChildKeysNum + 1], rightChildKeysNum + 1);
+
+    for (int i = rightMedianNum; i < keysNum - 1; ++i)
+    {
+        currentPage.copyKey(currentPage.getKey(i), currentPage.getKey(i + 1));
+        if (!isLeaf)
+            currentPage.copyCursors(currentPage.getCursorPtr(i + 1), currentPage.getCursorPtr(i + 2), 1);
+    }
+
+    currentPage.copyKey(currentPage.getKey(leftMedianNum), &keys[leftChildKeysNum]);
+    currentPage.setKeyNum(currentPage.getKeysNum() - 1);
+
+    leftChild.writePage();
+    middleChild.writePage();
+    currentPage.writePage();
+
+#ifdef BTREE_WITH_REUSING_FREE_PAGES
+
+    markPageFree(rightChild.getPageNum());
+
+#endif
+
+    delete[] keys;
+    if (cursors != nullptr)
+        delete[] cursors;
 }
 
 void BaseBStarTree::setOrder(UShort order, UShort recSize)

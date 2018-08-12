@@ -863,6 +863,9 @@ public:
     virtual bool prepareSubtree(UShort cursorNum, PageWrapper& currentPage, PageWrapper& child,
             PageWrapper& leftNeighbour, PageWrapper& rightNeighbour) override;
 
+    virtual void mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& rightChild,
+            BaseBTree::PageWrapper& currentPage, UShort medianNum) override;
+
     void mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& middleChild,
             BaseBTree::PageWrapper& rightChild, BaseBTree::PageWrapper& currentPage,
             UShort leftMedianNum, UShort rightMedianNum);
@@ -870,9 +873,8 @@ public:
 //    virtual const Byte* getAndRemoveMaxKey(PageWrapper& pw) override;
 //
 //    virtual const Byte* getAndRemoveMinKey(PageWrapper& pw) override;
-//
-//    virtual void mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& rightChild,
-//            BaseBTree::PageWrapper& currentPage, UShort medianNum) override;
+
+    
 
 #endif
 
