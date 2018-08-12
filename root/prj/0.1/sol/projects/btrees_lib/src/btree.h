@@ -924,7 +924,7 @@ public:
      * \param middle The page that will contain the new middle child.
      * \param right The right child.
      */
-    void splitChildren(PageWrapper& node, UShort iLeft, PageWrapper& left,
+    virtual void splitChildren(PageWrapper& node, UShort iLeft, PageWrapper& left,
             PageWrapper& middle, PageWrapper& right, bool isShort);
 
     /**
@@ -936,7 +936,7 @@ public:
      * @param child The child.
      * @param left The child's left sibling.
      */
-    bool shareKeysWithLeftChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
+    virtual bool shareKeysWithLeftChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
             PageWrapper& child, PageWrapper& left);
 
     /**
@@ -948,7 +948,7 @@ public:
      * @param child The child.
      * @param right The child's right sibling.
      */
-    bool shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
+    virtual bool shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
             PageWrapper& child, PageWrapper& right);
 
     virtual void setOrder(UShort order, UShort recSize) override;
@@ -978,6 +978,88 @@ protected:
     UInt _rightSplitProductKeys;
 
     UInt _shortRightSplitProductKeys;
+
+};
+
+class BaseBStarPlusTree : public BaseBStarTree {
+
+public:
+
+    BaseBStarPlusTree(UShort order, UShort recSize, IComparator* comparator, std::iostream* stream)
+            : BaseBStarTree(order, recSize, comparator, stream) { }
+
+    BaseBStarPlusTree(IComparator* comparator, std::iostream* stream) : BaseBStarTree(comparator, stream) { }
+
+    ~BaseBStarPlusTree();
+
+protected:
+
+    BaseBStarPlusTree(const BaseBStarPlusTree&);
+
+    BaseBStarPlusTree& operator=(BaseBStarPlusTree&);
+
+public:
+
+    virtual Byte* search(const Byte* k, PageWrapper& currentPage, UInt currentDepth) override;
+
+    virtual int searchAll(const Byte* k, std::list<Byte*>& keys,
+            PageWrapper& currentPage, UInt currentDepth) override;
+
+#ifdef BTREE_WITH_DELETION
+
+    virtual bool remove(const Byte* k, PageWrapper& currentPage) override;
+
+    virtual int removeAll(const Byte* k, PageWrapper& currentPage) override;
+
+    virtual void mergeChildren(PageWrapper& leftChild, PageWrapper& rightChild,
+            PageWrapper& currentPage, UShort medianNum) override;
+
+#endif
+
+public:
+
+    virtual void splitChildren(PageWrapper& node, UShort iLeft, PageWrapper& left,
+            PageWrapper& middle, PageWrapper& right, bool isShort) override;
+
+    virtual bool shareKeysWithLeftChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
+            PageWrapper& child, PageWrapper& left) override;
+
+    virtual bool shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
+            PageWrapper& child, PageWrapper& right) override;
+
+public:
+
+    /**
+     * \brief Returns the max keys number for the leaf node of the B+-tree.
+     * \returns The max keys number for the leaf node of the B+-tree.
+     */
+    UInt getMaxLeafKeys() const { return _maxLeafKeys; }
+
+    /**
+     * \brief Returns the min keys number for the leaf node of the B+-tree.
+     * \returns The min keys number for the leaf node of the B+-tree.
+     */
+    UInt getMinLeafKeys() const { return _minLeafKeys; }
+
+protected:
+
+    virtual void splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild) override;
+
+    virtual void setOrder(UShort order, UShort recSize) override;
+
+    virtual bool isFull(const PageWrapper& page) const override;
+
+protected:
+
+    /**
+     * The max keys number for the leaf node of the B+-tree.
+     */
+    UInt _maxLeafKeys;
+
+    /**
+     * The min keys number for the leaf node of the B+-tree.
+     */
+    UInt _minLeafKeys;
 
 };
 

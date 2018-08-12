@@ -2073,6 +2073,135 @@ bool BaseBStarTree::isFull(const PageWrapper& page) const
     return (!page.isRoot() && BaseBTree::isFull(page)) || (page.isRoot() && page.getKeysNum() == getMaxRootKeys());
 }
 
+void BaseBStarPlusTree::splitChildren(PageWrapper& node, UShort iLeft,
+        PageWrapper& left, PageWrapper& middle, PageWrapper& right, bool isShort)
+{
+    if (node.isFull())
+        throw std::domain_error("A parent node is full, so its children can't be splitted");
+
+    if (iLeft >= node.getKeysNum())
+        throw std::invalid_argument("Left and/or cursors do not exist");
+
+    if (left.getPageNum() == 0)
+        left.readPageFromChild(node, iLeft);
+
+    if (right.getPageNum() == 0)
+        right.readPageFromChild(node, iLeft + 1);
+
+    bool isLeaf = left.isLeaf();
+
+    if (!isLeaf)
+    {
+        BaseBStarTree::splitChildren(node, iLeft, left, middle, right, isShort);
+        return;
+    }
+
+    // TODO: implement method.
+}
+
+bool BaseBStarPlusTree::shareKeysWithLeftChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
+        PageWrapper& child, PageWrapper& left)
+{
+    if (!child.isFull())
+        throw std::invalid_argument("Child that shares keys should be full");
+
+    if (left.isFull())
+        throw std::invalid_argument("Left sibling should not be full");
+
+    if (iChild > node.getKeysNum())
+        throw std::invalid_argument("Cursor not exists");
+
+    IComparator* c = getComparator();
+    if (!c)
+        throw std::runtime_error("Comparator not set. Can't insert");
+
+    bool isChildLeaf = child.isLeaf();
+
+    if (!isChildLeaf)
+        return BaseBStarTree::shareKeysWithLeftChildAndInsert(k, node, iChild, child, left);
+
+    return false; // TODO: implement method.
+}
+
+bool BaseBStarPlusTree::shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
+        PageWrapper& child, PageWrapper& right)
+{
+    if (!child.isFull())
+        throw std::invalid_argument("Child that shares keys should be full");
+
+    if (right.isFull())
+        throw std::invalid_argument("Right sibling should not be full");
+
+    if (iChild >= node.getKeysNum())
+        throw std::invalid_argument("Cursor and/or right sibling not exists");
+
+    IComparator* c = getComparator();
+    if (!c)
+        throw std::runtime_error("Comparator not set. Can't insert");
+
+    bool isChildLeaf = child.isLeaf();
+
+    if (!isChildLeaf)
+        return BaseBStarTree::shareKeysWithRightChildAndInsert(k, node, iChild, child, right);
+
+    return false; // TODO: implement method.
+}
+
+void BaseBStarPlusTree::splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild)
+{
+    if (node.isFull())
+        throw std::domain_error("A parent node is full, so its child can't be splitted");
+
+    if (iChild > node.getKeysNum())
+        throw std::invalid_argument("Cursor not exists");
+
+    if (leftChild.getPageNum() == 0)
+        leftChild.readPageFromChild(node, iChild);
+
+    if (!leftChild.isLeaf())
+    {
+        BaseBStarTree::splitChild(node, iChild, leftChild, rightChild);
+        return;
+    }
+
+    // TODO: implement method.
+}
+
+void BaseBStarPlusTree::setOrder(UShort order, UShort recSize)
+{
+    _order = order;
+    _recSize = recSize;
+
+    _minKeys = (2 * _order - 2) / 3;
+    _maxKeys = _order;
+
+    _maxRootKeys = 2 * _minKeys;
+
+    _leftSplitProductKeys = (2 * _order - 1) / 3;
+    _middleSplitProductKeys = 2 * _order / 3;
+    _rightSplitProductKeys = (2 * _order + 1) / 3;
+    _shortRightSplitProductKeys = _rightSplitProductKeys - 1;
+
+    _minLeafKeys = _minKeys + 1;
+    _maxLeafKeys = _maxKeys + 1;
+
+    UInt maxPossibleNodeKeys = std::max(_maxLeafKeys, _maxRootKeys);
+
+    if (maxPossibleNodeKeys > MAX_KEYS_NUM)
+        throw std::invalid_argument("For a given B*-tree order, there is an excess of the maximum number of keys");
+
+    _keysSize = _recSize * maxPossibleNodeKeys;
+    _cursorsOfs = _keysSize + KEYS_OFS;
+    _nodePageSize = _cursorsOfs + CURSOR_SZ * (maxPossibleNodeKeys + 1);
+
+    reallocWorkPages();
+}
+
+bool BaseBStarPlusTree::isFull(const PageWrapper& page) const
+{
+    return (!page.isLeaf() && BaseBStarTree::isFull(page)) || (page.isLeaf() && page.getKeysNum() == getMaxLeafKeys());
+}
+
 //==============================================================================
 // class FileBaseBTree
 //==============================================================================
