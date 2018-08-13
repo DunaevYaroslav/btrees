@@ -866,7 +866,7 @@ public:
     virtual void mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& rightChild,
             BaseBTree::PageWrapper& currentPage, UShort medianNum) override;
 
-    void mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& middleChild,
+    virtual void mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& middleChild,
             BaseBTree::PageWrapper& rightChild, BaseBTree::PageWrapper& currentPage,
             UShort leftMedianNum, UShort rightMedianNum);
 
@@ -1005,16 +1005,20 @@ public:
     virtual int searchAll(const Byte* k, std::list<Byte*>& keys,
             PageWrapper& currentPage, UInt currentDepth) override;
 
-//#ifdef BTREE_WITH_DELETION
-//
-//    virtual bool remove(const Byte* k, PageWrapper& currentPage) override;
-//
+#ifdef BTREE_WITH_DELETION
+
+    virtual bool remove(const Byte* k, PageWrapper& currentPage) override;
+
 //    virtual int removeAll(const Byte* k, PageWrapper& currentPage) override;
-//
-//    virtual void mergeChildren(PageWrapper& leftChild, PageWrapper& rightChild,
-//            PageWrapper& currentPage, UShort medianNum) override;
-//
-//#endif
+
+    virtual void mergeChildren(PageWrapper& leftChild, PageWrapper& rightChild,
+            PageWrapper& currentPage, UShort medianNum) override;
+
+    virtual void mergeChildren(PageWrapper& leftChild, PageWrapper& middleChild,
+            PageWrapper& rightChild, PageWrapper& currentPage,
+            UShort leftMedianNum, UShort rightMedianNum) override;
+
+#endif
 
 public:
 

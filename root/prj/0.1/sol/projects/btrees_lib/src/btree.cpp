@@ -2130,6 +2130,29 @@ int BaseBStarPlusTree::searchAll(const Byte* k, std::list<Byte*>& keys, PageWrap
     return amount;
 }
 
+bool BaseBStarPlusTree::remove(const Byte* k, PageWrapper& currentPage)
+{
+    return false; // TODO: implement method.
+}
+
+//int BaseBStarPlusTree::removeAll(const Byte* k, PageWrapper& currentPage)
+//{
+//
+//}
+
+void BaseBStarPlusTree::mergeChildren(PageWrapper& leftChild, PageWrapper& rightChild,
+        PageWrapper& currentPage, UShort medianNum)
+{
+    // TODO: implement method.
+}
+
+void BaseBStarPlusTree::mergeChildren(PageWrapper& leftChild, PageWrapper& middleChild,
+        PageWrapper& rightChild, PageWrapper& currentPage,
+        UShort leftMedianNum, UShort rightMedianNum)
+{
+    // TODO: implement method.
+}
+
 void BaseBStarPlusTree::splitChildren(PageWrapper& node, UShort iLeft,
         PageWrapper& left, PageWrapper& middle, PageWrapper& right, bool isShort)
 {
