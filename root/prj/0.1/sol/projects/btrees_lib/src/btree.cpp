@@ -2073,6 +2073,63 @@ bool BaseBStarTree::isFull(const PageWrapper& page) const
     return (!page.isRoot() && BaseBTree::isFull(page)) || (page.isRoot() && page.getKeysNum() == getMaxRootKeys());
 }
 
+Byte* BaseBStarPlusTree::search(const Byte* k, PageWrapper& currentPage, UInt currentDepth)
+{
+    int i;
+    UShort keysNum = currentPage.getKeysNum();
+    for(i = 0; i < keysNum && _comparator->compare(currentPage.getKey(i), k, _recSize); ++i) ;
+
+    if(currentPage.isLeaf())
+        return BaseBTree::search(k, currentPage, currentDepth);
+    else
+    {
+        PageWrapper nextPage(this);
+        nextPage.readPageFromChild(currentPage, i);
+        return search(k, nextPage, currentDepth + 1);
+    }
+}
+
+int BaseBStarPlusTree::searchAll(const Byte* k, std::list<Byte*>& keys, PageWrapper& currentPage, UInt currentDepth)
+{
+    if(currentDepth > _maxSearchDepth)
+        _maxSearchDepth = currentDepth;
+
+    int amount = 0;
+    int i;
+    UShort keysNum = currentPage.getKeysNum();
+    bool isLeaf = currentPage.isLeaf();
+
+    for(i = 0; i < keysNum && _comparator->compare(currentPage.getKey(i), k, _recSize); ++i) ;
+
+    int first = i;
+
+    PageWrapper nextPage(this);
+    for( ; i < keysNum && (i == first || _comparator->isEqual(k, currentPage.getKey(i), _recSize)); ++i)
+    {
+        if(isLeaf && _comparator->isEqual(k, currentPage.getKey(i), _recSize))
+        {
+            Byte* result = new Byte[_recSize];
+            currentPage.copyKey(result, currentPage.getKey(i));
+            keys.push_back(result);
+            ++amount;
+        }
+
+        if(!isLeaf)
+        {
+            nextPage.readPageFromChild(currentPage, i);
+            amount += searchAll(k, keys, nextPage, currentDepth + 1);
+        }
+    }
+
+    if(!isLeaf)
+    {
+        nextPage.readPageFromChild(currentPage, i);
+        amount += searchAll(k, keys, nextPage, currentDepth + 1);
+    }
+
+    return amount;
+}
+
 void BaseBStarPlusTree::splitChildren(PageWrapper& node, UShort iLeft,
         PageWrapper& left, PageWrapper& middle, PageWrapper& right, bool isShort)
 {
@@ -2096,7 +2153,43 @@ void BaseBStarPlusTree::splitChildren(PageWrapper& node, UShort iLeft,
         return;
     }
 
-    // TODO: implement method.
+    UShort iRight = iLeft + 1;
+
+    middle.allocPage(getMiddleLeafSplitProductKeys(), isLeaf);
+
+    UShort keysNum = left.getKeysNum() + right.getKeysNum();
+    Byte* keys = new Byte[keysNum * _recSize];
+
+    node.copyKeys(&keys[0], left.getKey(0), left.getKeysNum());
+    node.copyKeys(&keys[left.getKeysNum() * _recSize], right.getKey(0), right.getKeysNum());
+
+    left.setKeyNum(getLeftSplitProductKeys());
+    node.copyKeys(left.getKey(0), &keys[0], getLeftSplitProductKeys());
+    node.copyKeys(middle.getKey(0), &keys[getLeftSplitProductKeys() * _recSize], getMiddleLeafSplitProductKeys());
+    right.setKeyNum(getRightSplitProductKeys(isShort));
+    node.copyKeys(right.getKey(0), &keys[(getLeftSplitProductKeys() + getMiddleLeafSplitProductKeys()) * _recSize],
+                  getRightSplitProductKeys(isShort));
+
+    UShort parentKeysNum = node.getKeysNum() + 1;
+    node.setKeyNum(parentKeysNum);
+
+    for (int i = parentKeysNum - 1; i > iLeft; --i)
+        node.copyKey(node.getKey(i), node.getKey(i - 1));
+
+    for (int i = parentKeysNum; i > iRight; --i)
+        node.copyCursors(node.getCursorPtr(i), node.getCursorPtr(i - 1), 1);
+
+    node.setCursor(iRight, middle.getPageNum());
+
+    left.writePage();
+    middle.writePage();
+    right.writePage();
+    node.writePage();
+
+    setRouterKey(node, iLeft);
+    setRouterKey(node, iRight);
+
+    delete[] keys;
 }
 
 bool BaseBStarPlusTree::shareKeysWithLeftChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
@@ -2120,7 +2213,38 @@ bool BaseBStarPlusTree::shareKeysWithLeftChildAndInsert(const Byte* k, PageWrapp
     if (!isChildLeaf)
         return BaseBStarTree::shareKeysWithLeftChildAndInsert(k, node, iChild, child, left);
 
-    return false; // TODO: implement method.
+    UShort childKeysNum = child.getKeysNum();
+    UShort leftSiblingKeysNum = left.getKeysNum();
+
+    UShort sum = childKeysNum + leftSiblingKeysNum;
+    UShort newLeftSiblingKeysNum = sum / 2 + (sum % 2 == 1 ? 1 : 0);
+    UShort movedKeys = newLeftSiblingKeysNum - leftSiblingKeysNum;
+    UShort childLeftKeys = childKeysNum - movedKeys;
+
+    if (newLeftSiblingKeysNum == getMaxKeys() && movedKeys == 1 && c->compare(k, child.getKey(0), _recSize))
+        return false;
+
+    left.setKeyNum(newLeftSiblingKeysNum);
+
+    node.copyKeys(left.getKey(leftSiblingKeysNum), child.getKey(0), movedKeys);
+
+    for (int j = 0; j < childLeftKeys; ++j)
+        node.copyKey(child.getKey(j), child.getKey(j + movedKeys));
+
+    child.setKeyNum(childLeftKeys);
+
+    left.writePage();
+    child.writePage();
+    node.writePage();
+
+    setRouterKey(node, iChild - 1);
+
+    if (c->compare(k, node.getKey(iChild - 1), getRecSize()))
+        insertNonFull(k, left);
+    else
+        insertNonFull(k, child);
+
+    return true;
 }
 
 bool BaseBStarPlusTree::shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
@@ -2144,7 +2268,39 @@ bool BaseBStarPlusTree::shareKeysWithRightChildAndInsert(const Byte* k, PageWrap
     if (!isChildLeaf)
         return BaseBStarTree::shareKeysWithRightChildAndInsert(k, node, iChild, child, right);
 
-    return false; // TODO: implement method.
+    UShort childKeysNum = child.getKeysNum();
+    UShort rightSiblingKeysNum = right.getKeysNum();
+
+    UShort sum = childKeysNum + rightSiblingKeysNum;
+    UShort newRightSiblingKeysNum = sum / 2 + (sum % 2 == 1 ? 1 : 0);
+    UShort movedKeys = newRightSiblingKeysNum - rightSiblingKeysNum;
+    UShort childLeftKeys = childKeysNum - movedKeys;
+
+    if (newRightSiblingKeysNum == getMaxKeys() && movedKeys == 1
+        && c->compare(child.getKey(childKeysNum - 2), k, _recSize))
+        return false;
+
+    right.setKeyNum(newRightSiblingKeysNum);
+
+    for (int j = newRightSiblingKeysNum - 1; j >= movedKeys; --j)
+        node.copyKey(right.getKey(j), right.getKey(j - movedKeys));
+
+    node.copyKeys(right.getKey(0), child.getKey(childLeftKeys), movedKeys);
+
+    child.setKeyNum(childLeftKeys);
+
+    child.writePage();
+    right.writePage();
+    node.writePage();
+
+    setRouterKey(node, iChild);
+
+    if (c->compare(node.getKey(iChild), k, getRecSize()))
+        insertNonFull(k, right);
+    else
+        insertNonFull(k, child);
+
+    return true;
 }
 
 void BaseBStarPlusTree::splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild)
@@ -2164,42 +2320,61 @@ void BaseBStarPlusTree::splitChild(PageWrapper& node, UShort iChild, PageWrapper
         return;
     }
 
-    // TODO: implement method.
+    UShort rightChildKeysNum = leftChild.getKeysNum() / 2;
+    UShort leftChildKeysNum = leftChild.getKeysNum() - rightChildKeysNum;
+
+    rightChild.allocPage(rightChildKeysNum, leftChild.isLeaf());
+
+    rightChild.copyKeys(rightChild.getKey(0), leftChild.getKey(leftChildKeysNum), rightChildKeysNum);
+    if (!leftChild.isLeaf())
+        node.copyCursors(rightChild.getCursorPtr(0), leftChild.getCursorPtr(leftChildKeysNum + 1),
+                         rightChildKeysNum + 1);
+
+    UShort keysNum = node.getKeysNum() + 1;
+    node.setKeyNum(keysNum);
+
+    for(int j = keysNum - 1; j > iChild; --j)
+        node.copyCursors(node.getCursorPtr(j + 1), node.getCursorPtr(j), 1);
+
+    node.setCursor(iChild + 1, rightChild.getPageNum());
+
+    for(int j = keysNum - 2; j >= iChild; --j)
+        node.copyKey(node.getKey(j + 1), node.getKey(j));
+
+    leftChild.setKeyNum(leftChildKeysNum);
+
+    leftChild.writePage();
+    rightChild.writePage();
+    node.writePage();
+
+    setRouterKey(node, iChild);
 }
 
 void BaseBStarPlusTree::setOrder(UShort order, UShort recSize)
 {
-    _order = order;
-    _recSize = recSize;
+    BaseBStarTree::setOrder(order, recSize);
 
-    _minKeys = (2 * _order - 2) / 3;
-    _maxKeys = _order;
-
-    _maxRootKeys = 2 * _minKeys;
-
-    _leftSplitProductKeys = (2 * _order - 1) / 3;
-    _middleSplitProductKeys = 2 * _order / 3;
-    _rightSplitProductKeys = (2 * _order + 1) / 3;
-    _shortRightSplitProductKeys = _rightSplitProductKeys - 1;
-
-    _minLeafKeys = _minKeys + 1;
-    _maxLeafKeys = _maxKeys + 1;
-
-    UInt maxPossibleNodeKeys = std::max(_maxLeafKeys, _maxRootKeys);
-
-    if (maxPossibleNodeKeys > MAX_KEYS_NUM)
-        throw std::invalid_argument("For a given B*-tree order, there is an excess of the maximum number of keys");
-
-    _keysSize = _recSize * maxPossibleNodeKeys;
-    _cursorsOfs = _keysSize + KEYS_OFS;
-    _nodePageSize = _cursorsOfs + CURSOR_SZ * (maxPossibleNodeKeys + 1);
-
-    reallocWorkPages();
+    _middleLeafSplitProductKeys = _middleSplitProductKeys + 1;
 }
 
-bool BaseBStarPlusTree::isFull(const PageWrapper& page) const
+void BaseBStarPlusTree::setRouterKey(PageWrapper& page, UShort keyNum)
 {
-    return (!page.isLeaf() && BaseBStarTree::isFull(page)) || (page.isLeaf() && page.getKeysNum() == getMaxLeafKeys());
+    if (keyNum >= page.getKeysNum())
+        throw std::invalid_argument("Key not exists");
+
+    if (page.isLeaf())
+        throw std::invalid_argument("Page should not be a leaf");
+
+    PageWrapper leftChild(this);
+
+    leftChild.readPageFromChild(page, keyNum);
+
+    if (leftChild.getKeysNum() == 0)
+        throw std::domain_error("Left child not exists");
+
+    page.copyKey(page.getKey(keyNum), leftChild.getKey(leftChild.getKeysNum() - 1));
+
+    page.writePage();
 }
 
 //==============================================================================
@@ -2230,6 +2405,7 @@ FileBaseBTree::FileBaseBTree(BaseBTree::TreeType treeType)
         case BaseBTree::TreeType::B_TREE: _tree = new BaseBTree(0, 0, nullptr, nullptr); break;
         case BaseBTree::TreeType::B_PLUS_TREE: _tree = new BaseBPlusTree(0, 0, nullptr, nullptr); break;
         case BaseBTree::TreeType::B_STAR_TREE: _tree = new BaseBStarTree(0, 0, nullptr, nullptr); break;
+        case BaseBTree::TreeType::B_STAR_PLUS_TREE: _tree = new BaseBStarPlusTree(0, 0, nullptr, nullptr); break;
     }
 
     isComposition = true;

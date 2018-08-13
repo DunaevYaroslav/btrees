@@ -3,6 +3,7 @@ add_executable(btrees_lib_tests
     btree_test.cpp
     bplustree_test.cpp
     bstartree_test.cpp
+    bstarplustree_test.cpp
     btree_based_index_tests.cpp
     bplustree_based_index_tests.cpp
     bstartree_based_index_tests.cpp

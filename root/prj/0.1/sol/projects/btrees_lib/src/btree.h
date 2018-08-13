@@ -42,7 +42,7 @@ namespace xi {
 class BaseBTree {
 public:
 
-    enum TreeType { B_TREE, B_PLUS_TREE, B_STAR_TREE };
+    enum TreeType { B_TREE, B_PLUS_TREE, B_STAR_TREE, B_STAR_PLUS_TREE };
 
 #pragma pack(push, 1)                           
     /** \brief File header structure.
@@ -1005,16 +1005,16 @@ public:
     virtual int searchAll(const Byte* k, std::list<Byte*>& keys,
             PageWrapper& currentPage, UInt currentDepth) override;
 
-#ifdef BTREE_WITH_DELETION
-
-    virtual bool remove(const Byte* k, PageWrapper& currentPage) override;
-
-    virtual int removeAll(const Byte* k, PageWrapper& currentPage) override;
-
-    virtual void mergeChildren(PageWrapper& leftChild, PageWrapper& rightChild,
-            PageWrapper& currentPage, UShort medianNum) override;
-
-#endif
+//#ifdef BTREE_WITH_DELETION
+//
+//    virtual bool remove(const Byte* k, PageWrapper& currentPage) override;
+//
+//    virtual int removeAll(const Byte* k, PageWrapper& currentPage) override;
+//
+//    virtual void mergeChildren(PageWrapper& leftChild, PageWrapper& rightChild,
+//            PageWrapper& currentPage, UShort medianNum) override;
+//
+//#endif
 
 public:
 
@@ -1027,39 +1027,21 @@ public:
     virtual bool shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
             PageWrapper& child, PageWrapper& right) override;
 
-public:
-
-    /**
-     * \brief Returns the max keys number for the leaf node of the B+-tree.
-     * \returns The max keys number for the leaf node of the B+-tree.
-     */
-    UInt getMaxLeafKeys() const { return _maxLeafKeys; }
-
-    /**
-     * \brief Returns the min keys number for the leaf node of the B+-tree.
-     * \returns The min keys number for the leaf node of the B+-tree.
-     */
-    UInt getMinLeafKeys() const { return _minLeafKeys; }
-
 protected:
 
     virtual void splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild) override;
 
     virtual void setOrder(UShort order, UShort recSize) override;
 
-    virtual bool isFull(const PageWrapper& page) const override;
+    void setRouterKey(PageWrapper& page, UShort keyNum);
+
+public:
+
+    UInt getMiddleLeafSplitProductKeys() const { return _middleLeafSplitProductKeys; }
 
 protected:
 
-    /**
-     * The max keys number for the leaf node of the B+-tree.
-     */
-    UInt _maxLeafKeys;
-
-    /**
-     * The min keys number for the leaf node of the B+-tree.
-     */
-    UInt _minLeafKeys;
+    UInt _middleLeafSplitProductKeys;
 
 };
 
