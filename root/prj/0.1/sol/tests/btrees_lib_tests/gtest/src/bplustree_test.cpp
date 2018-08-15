@@ -669,6 +669,66 @@ TEST_F(BPlusTreeTest, Remove6)
     }
 }
 
+TEST_F(BPlusTreeTest, Remove7)
+{
+    std::string& fn = getFn("Remove7.xibt");
+
+    ByteComparator comparator;
+    FileBaseBTree bt(BaseBTree::TreeType::B_PLUS_TREE, ORDER, 1, &comparator, fn);
+
+    Byte els[] = { 0x01, 0x11, 0x09, 0x05, 0x07, 0xAB, 0x02, 0x03, 0x03, 0x03, 0x03, 0x03 };
+    for (int i = 0; i < sizeof(els) / sizeof(els[0]); ++i)
+    {
+        Byte& el = els[i];
+        bt.insert(&el);
+    }
+
+    for(int i = 0; i < sizeof(els) / sizeof(els[0]); ++i)
+    {
+        Byte& el = els[i];
+        Byte* searched = bt.search(&el);
+        EXPECT_TRUE(searched != nullptr);
+        delete[] searched;
+
+        std::list<Byte*> keys;
+        if(els[i] == 0x03)
+        {
+            EXPECT_EQ(5, bt.searchAll(&el, keys));
+            EXPECT_EQ(el, *keys.front());
+            EXPECT_EQ(el, *keys.back());
+        }
+        else
+        {
+            EXPECT_EQ(1, bt.searchAll(&el, keys));
+            EXPECT_EQ(el, *keys.back());
+        }
+
+        clearKeysList(keys);
+    }
+
+    for(int i = sizeof(els) / sizeof(els[0]) - 5; i >= 0; --i)
+    {
+        Byte& el = els[i];
+
+        if(i == sizeof(els) / sizeof(els[0]) - 5)
+            EXPECT_EQ(5, bt.removeAll(&el));
+        else
+            EXPECT_EQ(1, bt.removeAll(&el));
+
+        Byte* searched = bt.search(&el);
+        EXPECT_TRUE(searched == nullptr);
+        delete[] searched;
+    }
+
+    for(int i = 0; i < sizeof(els) / sizeof(els[0]) - 1; ++i)
+    {
+        Byte& el = els[i];
+        Byte* searched = bt.search(&el);
+        EXPECT_TRUE(searched == nullptr);
+        delete[] searched;
+    }
+}
+
 #ifdef BTREE_WITH_REUSING_FREE_PAGES
 
 TEST_F(BPlusTreeTest, RemoveAndReuse1)

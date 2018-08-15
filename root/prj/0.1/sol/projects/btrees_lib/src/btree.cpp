@@ -1243,18 +1243,7 @@ bool BaseBPlusTree::remove(const Byte* k, BaseBTree::PageWrapper& currentPage)
     if(currentPage.isLeaf())
     {
         if(i < keysNum && _comparator->isEqual(k, currentPage.getKey(i), _recSize))
-        {
-            UShort keysNum = currentPage.getKeysNum();
-
-            for (int j = i; j < keysNum - 1; ++j)
-                currentPage.copyKey(currentPage.getKey(j), currentPage.getKey(j + 1));
-
-            currentPage.setKeyNum(keysNum - 1);
-
-            currentPage.writePage();
-
-            return true;
-        }
+            return removeByKeyNum(i, currentPage);
         else
             return false;
     }
@@ -1262,17 +1251,20 @@ bool BaseBPlusTree::remove(const Byte* k, BaseBTree::PageWrapper& currentPage)
     {
         PageWrapper nextPage(this);
         nextPage.readPageFromChild(currentPage, i);
-        if (!nextPage.isRoot() && nextPage.isLeaf() && nextPage.getKeysNum() == getMinLeafKeys())
+        if (!nextPage.isRoot() && nextPage.getKeysNum() == (nextPage.isLeaf() ? getMinLeafKeys() : getMinKeys()))
         {
+            bool isLeaf = nextPage.isLeaf();
+            UShort minKeys = isLeaf ? getMinLeafKeys() : getMinKeys();
+
             PageWrapper leftSibling(this);
             PageWrapper rightSibling(this);
 
             if (i > 0)
             {
                 leftSibling.readPageFromChild(currentPage, i - 1);
-                if (leftSibling.getKeysNum() > getMinLeafKeys())
+                if (leftSibling.getKeysNum() > minKeys)
                 {
-                    nextPage.setKeyNum(getMinLeafKeys() + 1);
+                    nextPage.setKeyNum(minKeys + 1);
                     for (int j = getMinLeafKeys(); j > 0; --j)
                         currentPage.copyKey(nextPage.getKey(j), nextPage.getKey(j - 1));
 
@@ -1289,11 +1281,11 @@ bool BaseBPlusTree::remove(const Byte* k, BaseBTree::PageWrapper& currentPage)
             if (i < keysNum)
             {
                 rightSibling.readPageFromChild(currentPage, i + 1);
-                if (rightSibling.getKeysNum() > getMinLeafKeys())
+                if (rightSibling.getKeysNum() > minKeys)
                 {
-                    nextPage.setKeyNum(getMinLeafKeys() + 1);
+                    nextPage.setKeyNum(minKeys + 1);
 
-                    currentPage.copyKey(nextPage.getKey(getMinLeafKeys()), rightSibling.getKey(0));
+                    currentPage.copyKey(nextPage.getKey(minKeys), rightSibling.getKey(0));
                     currentPage.copyKey(currentPage.getKey(i), rightSibling.getKey(0));
                     int rightSiblingKeysNum = rightSibling.getKeysNum();
                     for (int j = 0; j < rightSiblingKeysNum - 1; ++j)
@@ -1309,14 +1301,21 @@ bool BaseBPlusTree::remove(const Byte* k, BaseBTree::PageWrapper& currentPage)
 
             if (i > 0)
             {
-                if (leftSibling.getKeysNum() == getMinLeafKeys())
+                if (leftSibling.getKeysNum() == minKeys)
                 {
-                    mergeChildren(leftSibling, nextPage, currentPage, i - 1);
+                    if (isLeaf)
+                        mergeChildren(leftSibling, nextPage, currentPage, i - 1);
+                    else
+                        BaseBTree::mergeChildren(leftSibling, nextPage, currentPage, i - 1);
+
                     return remove(k, leftSibling);
                 }
             }
 
-            mergeChildren(nextPage, rightSibling, currentPage, i);
+            if (isLeaf)
+                mergeChildren(nextPage, rightSibling, currentPage, i);
+            else
+                BaseBTree::mergeChildren(nextPage, rightSibling, currentPage, i);
         }
 
         return nextPage.isRoot() ? remove(k, _rootPage) : remove(k, nextPage);
@@ -1413,8 +1412,11 @@ void BaseBPlusTree::mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::
 
     leftChild.copyKeys(leftChild.getKey(getMinLeafKeys()), rightChild.getKey(0), getMinLeafKeys());
 
-    for(int j = medianNum; j < keysNum - 1; ++j)
-        currentPage.copyKey(currentPage.getKey(j), currentPage.getKey(j + 1));
+    for(int i = medianNum; i < keysNum - 1; ++i)
+    {
+        currentPage.copyKey(currentPage.getKey(i), currentPage.getKey(i + 1));
+        currentPage.copyCursors(currentPage.getCursorPtr(i + 1), currentPage.getCursorPtr(i + 2), 1);
+    }
 
     leftChild.writePage();
 
@@ -2019,8 +2021,7 @@ void BaseBStarTree::mergeChildren(PageWrapper& leftChild, PageWrapper& middleChi
     for (int i = rightMedianNum; i < keysNum - 1; ++i)
     {
         currentPage.copyKey(currentPage.getKey(i), currentPage.getKey(i + 1));
-        if (!isLeaf)
-            currentPage.copyCursors(currentPage.getCursorPtr(i + 1), currentPage.getCursorPtr(i + 2), 1);
+        currentPage.copyCursors(currentPage.getCursorPtr(i + 1), currentPage.getCursorPtr(i + 2), 1);
     }
 
     currentPage.copyKey(currentPage.getKey(leftMedianNum), &keys[leftChildKeysNum]);
@@ -2132,25 +2133,209 @@ int BaseBStarPlusTree::searchAll(const Byte* k, std::list<Byte*>& keys, PageWrap
 
 bool BaseBStarPlusTree::remove(const Byte* k, PageWrapper& currentPage)
 {
-    return false; // TODO: implement method.
+    int i;
+    UShort keysNum = currentPage.getKeysNum();
+    for(i = 0; i < keysNum && _comparator->compare(currentPage.getKey(i), k, _recSize); ++i) ;
+
+    if(currentPage.isLeaf())
+    {
+        if(i < keysNum && _comparator->isEqual(k, currentPage.getKey(i), _recSize))
+            removeByKeyNum(i, currentPage);
+        else
+            return false;
+    }
+    else
+    {
+        PageWrapper nextPage(this);
+        nextPage.readPageFromChild(currentPage, i);
+        if (!nextPage.isRoot() && nextPage.getKeysNum() == getMinKeys())
+        {
+            bool isLeaf = nextPage.isLeaf();
+
+            PageWrapper leftSibling(this);
+            PageWrapper rightSibling(this);
+
+            if (i > 0)
+            {
+                leftSibling.readPageFromChild(currentPage, i - 1);
+                if (leftSibling.getKeysNum() > getMinKeys())
+                {
+                    nextPage.setKeyNum(getMinKeys() + 1);
+                    for (int j = getMinKeys(); j > 0; --j)
+                        currentPage.copyKey(nextPage.getKey(j), nextPage.getKey(j - 1));
+
+                    currentPage.copyKey(nextPage.getKey(0), leftSibling.getKey(leftSibling.getKeysNum() - 1));
+                    leftSibling.setKeyNum(leftSibling.getKeysNum() - 1);
+
+                    leftSibling.writePage();
+                    nextPage.writePage();
+
+                    return remove(k, nextPage);
+                }
+            }
+
+            if (i < keysNum)
+            {
+                rightSibling.readPageFromChild(currentPage, i + 1);
+                if (rightSibling.getKeysNum() > getMinKeys())
+                {
+                    nextPage.setKeyNum(getMinKeys() + 1);
+
+                    currentPage.copyKey(nextPage.getKey(getMinKeys()), rightSibling.getKey(0));
+                    currentPage.copyKey(currentPage.getKey(i), rightSibling.getKey(0));
+                    int rightSiblingKeysNum = rightSibling.getKeysNum();
+                    for (int j = 0; j < rightSiblingKeysNum - 1; ++j)
+                        currentPage.copyKey(rightSibling.getKey(j), rightSibling.getKey(j + 1));
+                    rightSibling.setKeyNum(rightSiblingKeysNum - 1);
+
+                    nextPage.writePage();
+                    rightSibling.writePage();
+
+                    return remove(k, nextPage);
+                }
+            }
+
+            if (i > 0 && i < keysNum)
+            {
+                if (isLeaf)
+                    mergeChildren(leftSibling, nextPage, rightSibling, currentPage, i - 1, i);
+                else
+                    BaseBStarTree::mergeChildren(leftSibling, nextPage, rightSibling, currentPage, i - 1, i);
+
+                if (remove(k, leftSibling))
+                    return true;
+
+                return remove(k, nextPage);
+            }
+
+            if (i > 0)
+            {
+                if (leftSibling.getKeysNum() == getMinKeys())
+                {
+                    if (isLeaf)
+                        mergeChildren(leftSibling, nextPage, currentPage, i - 1);
+                    else
+                        BaseBStarTree::mergeChildren(leftSibling, nextPage, currentPage, i - 1);
+
+                    return remove(k, leftSibling);
+                }
+            }
+
+            if (isLeaf)
+                mergeChildren(nextPage, rightSibling, currentPage, i);
+            else
+                BaseBStarTree::mergeChildren(nextPage, rightSibling, currentPage, i);
+        }
+
+        return nextPage.isRoot() ? remove(k, _rootPage) : remove(k, nextPage);
+    }
 }
 
-//int BaseBStarPlusTree::removeAll(const Byte* k, PageWrapper& currentPage)
-//{
-//
-//}
+int BaseBStarPlusTree::removeAll(const Byte* k, PageWrapper& currentPage)
+{
+    int amount = 0;
+
+    while (BaseBTree::remove(k))
+        ++amount;
+
+    return amount;
+}
 
 void BaseBStarPlusTree::mergeChildren(PageWrapper& leftChild, PageWrapper& rightChild,
         PageWrapper& currentPage, UShort medianNum)
 {
-    // TODO: implement method.
+    if (!leftChild.isLeaf() || !rightChild.isLeaf())
+        throw std::invalid_argument("In B*+tree only leafs merging is allowed");
+
+    UShort parentKeysNum = currentPage.getKeysNum();
+    UShort keysNum = leftChild.getKeysNum() + rightChild.getKeysNum();
+    UShort oldLeftKeysNum = leftChild.getKeysNum();
+
+    leftChild.setKeyNum(keysNum);
+
+    leftChild.copyKeys(leftChild.getKey(oldLeftKeysNum), rightChild.getKey(0), rightChild.getKeysNum());
+
+    for(int i = medianNum; i < parentKeysNum - 1; ++i)
+    {
+        currentPage.copyKey(currentPage.getKey(i), currentPage.getKey(i + 1));
+        currentPage.copyCursors(currentPage.getCursorPtr(i + 1), currentPage.getCursorPtr(i + 2), 1);
+    }
+
+    leftChild.writePage();
+
+    if(currentPage.getKeysNum() == 1)
+    {
+        leftChild.setAsRoot(true);
+
+#ifdef BTREE_WITH_REUSING_FREE_PAGES
+
+        markPageFree(currentPage.getPageNum());
+
+#endif
+
+        loadRootPage();
+    }
+    else
+    {
+        currentPage.setKeyNum(parentKeysNum - 1);
+        currentPage.writePage();
+    }
+
+
+#ifdef BTREE_WITH_REUSING_FREE_PAGES
+
+    markPageFree(rightChild.getPageNum());
+
+#endif
 }
 
 void BaseBStarPlusTree::mergeChildren(PageWrapper& leftChild, PageWrapper& middleChild,
         PageWrapper& rightChild, PageWrapper& currentPage,
         UShort leftMedianNum, UShort rightMedianNum)
 {
-    // TODO: implement method.
+    bool isLeaf = leftChild.isLeaf();
+
+    if (!isLeaf)
+        throw std::invalid_argument("In B*+tree only leafs merging is allowed");
+
+    UShort keysNum = leftChild.getKeysNum() + middleChild.getKeysNum() + rightChild.getKeysNum();
+    Byte* keys = new Byte[keysNum * _recSize];
+
+    currentPage.copyKeys(&keys[0], leftChild.getKey(0), leftChild.getKeysNum());
+    currentPage.copyKeys(&keys[leftChild.getKeysNum() * _recSize], middleChild.getKey(0), middleChild.getKeysNum());
+    currentPage.copyKeys(&keys[(leftChild.getKeysNum() + middleChild.getKeysNum()) * _recSize],
+                         rightChild.getKey(0), rightChild.getKeysNum());
+
+    UShort rightChildKeysNum = keysNum / 2;
+    UShort leftChildKeysNum = keysNum - rightChildKeysNum;
+
+    leftChild.setKeyNum(leftChildKeysNum);
+    currentPage.copyKeys(leftChild.getKey(0), &keys[0], leftChildKeysNum);
+
+    middleChild.setKeyNum(rightChildKeysNum);
+    currentPage.copyKeys(middleChild.getKey(0), &keys[leftChildKeysNum], rightChildKeysNum);
+
+    for (int i = rightMedianNum; i < keysNum - 1; ++i)
+    {
+        currentPage.copyKey(currentPage.getKey(i), currentPage.getKey(i + 1));
+        currentPage.copyCursors(currentPage.getCursorPtr(i + 1), currentPage.getCursorPtr(i + 2), 1);
+    }
+
+    currentPage.setKeyNum(currentPage.getKeysNum() - 1);
+
+    leftChild.writePage();
+    middleChild.writePage();
+    currentPage.writePage();
+
+    setRouterKey(leftChild, leftMedianNum);
+
+#ifdef BTREE_WITH_REUSING_FREE_PAGES
+
+    markPageFree(rightChild.getPageNum());
+
+#endif
+
+    delete[] keys;
 }
 
 void BaseBStarPlusTree::splitChildren(PageWrapper& node, UShort iLeft,

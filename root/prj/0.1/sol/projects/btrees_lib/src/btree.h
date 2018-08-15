@@ -1009,7 +1009,7 @@ public:
 
     virtual bool remove(const Byte* k, PageWrapper& currentPage) override;
 
-//    virtual int removeAll(const Byte* k, PageWrapper& currentPage) override;
+    virtual int removeAll(const Byte* k, PageWrapper& currentPage) override;
 
     virtual void mergeChildren(PageWrapper& leftChild, PageWrapper& rightChild,
             PageWrapper& currentPage, UShort medianNum) override;
