@@ -16,7 +16,7 @@
 #include "individual.h"
 #include "indexer.h"
 
-using namespace xi;
+using namespace btree;
 
 static const int ORDERS[] = { 2, 4, 6, 8, 10, 20, 30, 40, 50, 250, 450, 650, 850, 1050, 1250, 1450, 1650, 1850, 2050 };
 
@@ -94,7 +94,7 @@ private:
      */
     double getTimeInSecs(clock_t begin, clock_t end);
 
-};
+}; // class BPlusTreeBasedIndexTest
 
 void BPlusTreeBasedIndexTest::testIndex(std::string fileName, std::string treeFileName,
         std::string indexOutFileName, std::string linearOutFileName,
@@ -107,7 +107,7 @@ void BPlusTreeBasedIndexTest::testIndex(std::string fileName, std::string treeFi
     indexOutFileName = TEST_FILES_PATH + indexOutFileName;
     linearOutFileName = TEST_FILES_PATH + linearOutFileName;
 
-    xi::Indexer indexer;
+    btree::Indexer indexer;
     indexer.create(BaseBTree::TreeType::B_PLUS_TREE, ORDER, treeFileName);
 
     std::cout << "Indexing..." << std::endl;
@@ -157,7 +157,7 @@ void BPlusTreeBasedIndexTest::testIndexWithDifferentParams(std::string fileName,
     {
         std::cout << "Tree order " << ORDERS[i] << std::endl;
 
-        xi::Indexer indexer;
+        btree::Indexer indexer;
         indexer.create(BaseBTree::TreeType::B_PLUS_TREE, ORDERS[i], treeFileName);
 
         std::cout << "Indexing..." << std::endl;
@@ -220,7 +220,7 @@ void BPlusTreeBasedIndexTest::testIndexWithDifferentParamsAndCountAggregates(std
 
         for (int j = 0; j < TESTS_COUNT; ++j)
         {
-            xi::Indexer indexer;
+            btree::Indexer indexer;
             indexer.create(BaseBTree::TreeType::B_PLUS_TREE, ORDERS[i], treeFileName);
 
             std::cout << "Indexing..." << std::endl;

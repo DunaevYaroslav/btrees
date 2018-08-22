@@ -1,5 +1,5 @@
 /// \file
-/// \brief     B-tree / B+-tree / B*-tree file indexer.
+/// \brief     B-tree / B+-tree / B*-tree / B*+-tree file indexer.
 /// \authors   Anton Rigin
 /// \version   0.1.0
 /// \date      01.05.2017 -- 02.04.2018
@@ -10,7 +10,7 @@
 
 #include "indexer.h"
 
-namespace xi
+namespace btree
 {
 
 Indexer::Key::Key(const std::wstring& nam) : offset(0)
@@ -209,4 +209,4 @@ std::string Indexer::getLine(std::ifstream& file)
     return line;
 }
 
-} // namespace xi
+} // namespace btree

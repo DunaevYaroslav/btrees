@@ -25,7 +25,7 @@
 #define DEPRECATED
 #endif
 
-namespace xi {
+namespace btree {
 
 //==============================================================================
 // Types
@@ -41,6 +41,6 @@ typedef unsigned long ULong;
 
 #endif
 
-} // namespace xi
+} // namespace btree
 
 #endif // BTREE_UTILS_H_

@@ -1,5 +1,5 @@
 ﻿/// \file
-/// \brief     B-tree, B+-tree and B*-tree classes
+/// \brief     B-tree, B+-tree, B*-tree and B*+-tree classes
 /// \authors   Anton Rigin, also code by Sergey Shershakov used
 /// \version   0.1.0
 /// \date      01.05.2017 -- 02.04.2018
@@ -23,7 +23,7 @@
 
 #include "utils.h"
 
-namespace xi {
+namespace btree {
 
 /** \brief Base B-tree.
  *
@@ -54,7 +54,7 @@ public:
     struct Header {
 
         /** \brief The valid signature. */
-        static const UInt VALID_SIGN = 0x54424958;
+        static const UInt VALID_SIGN = 0x19979AAA;
     public:
         Header() : order(0), recSize(0), sign(0) {}
         Header(UShort ord, UShort rs) : 
@@ -65,7 +65,7 @@ public:
         /** \brief Checks structure for integrity, returns true if it is ok, otherwise returns false. */
         bool checkIntegrity();
     public:
-        UInt sign;  // = 0x54424958;
+        UInt sign;  // = 0x19979AAA;
         UShort order;
         UShort recSize;
     }; // struct Header
@@ -418,13 +418,6 @@ public:
     /** \brief Inserts the key k into the tree using the ordering. */
     void insert(const Byte* k);
 
-    /** \brief Insert key k into the non-fulfilled node using the ordering.
-     *
-     *  If node is fulfilled, throws an exception.
-     *  If comparator is not defined for the tree, throws an exception.
-     */
-    virtual void insertNonFull(const Byte* k, PageWrapper& currentNode);
-    
     /** \brief For the given key \c k finds the first its occurrence in the tree.
      *  If the key is found, returns the pointer to the appropriate bytes array, otherwise returns nullptr.
      */
@@ -533,6 +526,13 @@ public:
 
 protected:
 
+    /** \brief Insert key k into the non-fulfilled node using the ordering.
+     *
+     *  If node is fulfilled, throws an exception.
+     *  If comparator is not defined for the tree, throws an exception.
+     */
+    virtual void insertNonFull(const Byte* k, PageWrapper& currentNode);
+
     /**
      * \brief Inner child splitting method. It is necessary for reducing the number of the disk operations.
      *
@@ -540,7 +540,7 @@ protected:
      * \param leftChild The left child wrapper.
      * \param rightChild The right child wrapper.
      */
-     virtual void splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild);
+    virtual void splitChild(PageWrapper& node, UShort iChild, PageWrapper& leftChild, PageWrapper& rightChild);
 
 #ifdef BTREE_WITH_DELETION
 
@@ -597,7 +597,7 @@ protected:
     /**
      * \brief Merges the left child and the right child using the given median.
      * \param leftChild The left child.
-     * \param rightChild The right child
+     * \param rightChild The right child.
      * \param currentPage The parent of the left child and the right child.
      * \param medianNum The given median number in the parent.
      */
@@ -760,6 +760,7 @@ protected:
 
 }; // class BaseBTree
 
+/** \brief The B+-tree. */
 class BaseBPlusTree : public BaseBTree {
 
 public:
@@ -777,7 +778,7 @@ protected:
 
     BaseBPlusTree& operator=(BaseBPlusTree&);
 
-public:
+protected:
 
     virtual Byte* search(const Byte* k, PageWrapper& currentPage, UInt currentDepth) override;
 
@@ -829,8 +830,9 @@ protected:
      */
     UInt _minLeafKeys;
 
-};
+}; // class BaseBPlusTree
 
+/** \brief The B*-tree. */
 class BaseBStarTree : public BaseBTree {
 
 public:
@@ -848,33 +850,30 @@ protected:
 
     BaseBStarTree& operator=(BaseBStarTree&);
 
-public:
+protected:
 
 #ifdef BTREE_WITH_DELETION
 
-// TODO: removing in B*-tree.
-
     virtual bool remove(const Byte* k, PageWrapper& currentPage) override;
-
-//    virtual int removeAll(const Byte* k, PageWrapper& currentPage) override;
-
-//    virtual bool removeByKeyNum(UShort keyNum, PageWrapper& currentPage) override;
 
     virtual bool prepareSubtree(UShort cursorNum, PageWrapper& currentPage, PageWrapper& child,
             PageWrapper& leftNeighbour, PageWrapper& rightNeighbour) override;
 
-    virtual void mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& rightChild,
-            BaseBTree::PageWrapper& currentPage, UShort medianNum) override;
+    virtual void mergeChildren(PageWrapper& leftChild, PageWrapper& rightChild,
+            PageWrapper& currentPage, UShort medianNum) override;
 
-    virtual void mergeChildren(BaseBTree::PageWrapper& leftChild, BaseBTree::PageWrapper& middleChild,
-            BaseBTree::PageWrapper& rightChild, BaseBTree::PageWrapper& currentPage,
+    /**
+     * \brief Merges the left child and the right child using the given median.
+     * \param leftChild The left child.
+     * \param middleChild The middle child.
+     * \param rightChild The right child.
+     * \param currentPage The parent of the left child, the middle child and the right child.
+     * \param leftMedianNum The given left median number in the parent.
+     * \param rightMedianNum The given right median number in the parent.
+     */
+    virtual void mergeChildren(PageWrapper& leftChild, PageWrapper& middleChild,
+            PageWrapper& rightChild, PageWrapper& currentPage,
             UShort leftMedianNum, UShort rightMedianNum);
-
-//    virtual const Byte* getAndRemoveMaxKey(PageWrapper& pw) override;
-//
-//    virtual const Byte* getAndRemoveMinKey(PageWrapper& pw) override;
-
-    
 
 #endif
 
@@ -904,12 +903,16 @@ public:
      */
     UInt getRightSplitProductKeys() const { return _rightSplitProductKeys; }
 
+    /**
+     * \brief Returns the keys number for the middle split product in the B*-tree in the short split case
+     * (sometimes when the sibling is not full).
+     * \returns The keys number for the middle split product in the B*-tree in the short split case.
+     */
     UInt getShortRightSplitProductKeys() const { return _shortRightSplitProductKeys; }
 
-    UInt getRightSplitProductKeys(bool isShort) const { return isShort? _shortRightSplitProductKeys : _rightSplitProductKeys; }
+    UInt getRightSplitProductKeys(bool isShort) const { return isShort ? _shortRightSplitProductKeys : _rightSplitProductKeys; }
 
-
-    protected:
+protected:
 
     virtual void insertNonFull(const Byte* k, PageWrapper& currentNode) override;
 
@@ -930,11 +933,11 @@ public:
     /**
      * \brief Shares keys from the child to its left sibling to make this child non-full and inserts the key \param k.
      *
-     * @param k The key for insertion.
-     * @param node The parent node.
-     * @param iChild The index of the parent node's cursor to the child.
-     * @param child The child.
-     * @param left The child's left sibling.
+     * \param k The key for insertion.
+     * \param node The parent node.
+     * \param iChild The index of the parent node's cursor to the child.
+     * \param child The child.
+     * \param left The child's left sibling.
      */
     virtual bool shareKeysWithLeftChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
             PageWrapper& child, PageWrapper& left);
@@ -942,11 +945,11 @@ public:
     /**
      * \brief Shares keys from the child to its right sibling to make this child non-full and inserts the key \param k.
      *
-     * @param k The key for insertion.
-     * @param node The parent node.
-     * @param iChild The index of the parent node's cursor to the child.
-     * @param child The child.
-     * @param right The child's right sibling.
+     * \param k The key for insertion.
+     * \param node The parent node.
+     * \param iChild The index of the parent node's cursor to the child.
+     * \param child The child.
+     * \param right The child's right sibling.
      */
     virtual bool shareKeysWithRightChildAndInsert(const Byte* k, PageWrapper& node, UShort iChild,
             PageWrapper& child, PageWrapper& right);
@@ -977,10 +980,15 @@ protected:
      */
     UInt _rightSplitProductKeys;
 
+    /**
+     * \brief The keys number for the middle split product in the B*-tree in the short split case
+     * (sometimes when the sibling is not full).
+     */
     UInt _shortRightSplitProductKeys;
 
-};
+}; // class BaseBStarTree
 
+/** \brief The B*+-tree. */
 class BaseBStarPlusTree : public BaseBStarTree {
 
 public:
@@ -998,7 +1006,7 @@ protected:
 
     BaseBStarPlusTree& operator=(BaseBStarPlusTree&);
 
-public:
+protected:
 
     virtual Byte* search(const Byte* k, PageWrapper& currentPage, UInt currentDepth) override;
 
@@ -1020,7 +1028,7 @@ public:
 
 #endif
 
-public:
+protected:
 
     virtual void splitChildren(PageWrapper& node, UShort iLeft, PageWrapper& left,
             PageWrapper& middle, PageWrapper& right, bool isShort) override;
@@ -1037,17 +1045,30 @@ protected:
 
     virtual void setOrder(UShort order, UShort recSize) override;
 
+    /**
+     * \brief Sets the router key in the given page to the key with given number.
+     * Uses for this the right key of the left child.
+     * \param page The given page.
+     * \param keyNum The given number of the key.
+     */
     void setRouterKey(PageWrapper& page, UShort keyNum);
 
 public:
 
+    /**
+     * \brief Returns the keys number for the middle split product in the B*+-tree in the leafs split case.
+     * \returns The keys number for the middle split product in the B*+-tree in the leafs split case.
+     */
     UInt getMiddleLeafSplitProductKeys() const { return _middleLeafSplitProductKeys; }
 
 protected:
 
+    /**
+     * \brief The keys number for the middle split product in the B*+-tree in the leafs split case.
+     */
     UInt _middleLeafSplitProductKeys;
 
-};
+}; // class BaseBStarPlusTree
 
 /** \brief B-tree based on the file stream. */
 class FileBaseBTree {
@@ -1167,7 +1188,7 @@ protected:
 
 }; // class FileBaseBTree
 
-} // namespace xi
+} // namespace btree
 
 #endif // BTREE_WITH_REUSING_FREE_PAGES
 

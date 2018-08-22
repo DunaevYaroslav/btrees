@@ -1,5 +1,5 @@
 /// \file
-/// \brief     B-tree / B+-tree / B*-tree file indexer.
+/// \brief     B-tree / B+-tree / B*-tree / B*+-tree file indexer.
 /// \authors   Anton Rigin
 /// \version   0.1.0
 /// \date      01.05.2017 -- 02.04.2018
@@ -20,7 +20,7 @@
 #include "btree.h"
 #include "utils.h"
 
-namespace xi
+namespace btree
 {
 
 /** \brief Represents the B-tree based indexer of the file records. */
@@ -164,6 +164,6 @@ private:
 
 }; // class Indexer
 
-} // namespace xi
+} // namespace btree
 
 #endif // BTREEBASEDINDEX_INDEXER_H

@@ -14,7 +14,7 @@
 #include "individual.h"
 #include "btree.h"
 
-using namespace xi;
+using namespace btree;
 
 /** \brief Тестовый класс для тестирования открытых интерфейсов B*+-tree. */
 class BStarPlusTreeTest : public ::testing::Test {
@@ -27,14 +27,7 @@ public:
     static const int ORDER = 4;
 
 public:
-    //BTreeTest()
-    //    : _dumper(DUMP_EVENTLOG_PUB_FN, DUMP_IMGS_PUB_PATH)
-    //{
-    //}
 
-public:
-    //static const int STRUCT2_SEQ[];
-    //static const int STRUCT2_SEQ_NUM;
     std::string& getFn(const char* fn)
     {
         _fn = TEST_FILES_PATH;
@@ -51,12 +44,10 @@ public:
     }
 
 protected:
-    std::string _fn;        ///< Имя файла
-    //RBTreeDefDumper<int, std::less<int>> _dumper;
 
-    ///** \brief Выводить в формате GraphViz. */
-    //RBTreeGvDumper<int, std::less<int>> _gvDumper;
-}; // class RBTreePubTest
+    std::string _fn;        ///< Имя файла
+
+}; // class BStarPlusTreeTest
 
 struct ByteComparator : public BaseBTree::IComparator {
     virtual bool compare(const Byte* lhv, const Byte* rhv, UInt sz) override
@@ -78,7 +69,7 @@ struct ByteComparator : public BaseBTree::IComparator {
 
 
 
-};
+}; // struct ByteComparator
 
 TEST_F(BStarPlusTreeTest, InsertS1)
 {
