@@ -7,6 +7,7 @@ add_executable(btrees_lib_tests
     btree_based_index_tests.cpp
     bplustree_based_index_tests.cpp
     bstartree_based_index_tests.cpp
+    bstarplustree_based_index_tests.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../projects/btrees_lib/src/utils.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../projects/btrees_lib/src/btree.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../projects/btrees_lib/src/btree.cpp
