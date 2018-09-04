@@ -139,6 +139,14 @@ public:
      */
     UInt getMaxSearchDepth() { return _bt != nullptr ? _bt->getTree()->getMaxSearchDepth() : 0; }
 
+    UInt getReadDiskOperationsCount() { return _bt != nullptr ? _bt->getTree()->getReadDiskOperationsCount() : 0; }
+
+    UInt getWriteDiskOperationsCount() { return _bt != nullptr ? _bt->getTree()->getWriteDiskOperationsCount() : 0; }
+
+    UInt getSeekDiskOperationsCount() { return _bt != nullptr ? _bt->getTree()->getSeekDiskOperationsCount() : 0; }
+
+    FileBaseBTree* getTree() const { return _bt; }
+
 private:
 
     /** \brief  Reads line from the file.

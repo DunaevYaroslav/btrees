@@ -1,5 +1,5 @@
 /// \file
-/// \brief     The Experiment class.
+/// \brief     The Experiment and ExperimentResult classes.
 /// \authors   Anton Rigin
 /// \version   0.1
 /// \date      01.05.2017 -- 02.04.2018

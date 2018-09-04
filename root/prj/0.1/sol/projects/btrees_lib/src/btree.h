@@ -510,6 +510,12 @@ public:
      */
     UInt getMaxSearchDepth() const { return _maxSearchDepth; }
 
+    UInt getReadDiskOperationsCount() const { return _readDiskOperationsCount; }
+
+    UInt getWriteDiskOperationsCount() const { return _writeDiskOperationsCount; }
+
+    UInt getSeekDiskOperationsCount() const { return _seekDiskOperationsCount; }
+
      /** \brief Returns the reference to the current root page. */
     PageWrapper& getRootPage() { return _rootPage; }
 
@@ -738,6 +744,12 @@ protected:
 
     /** \brief The max reached tree's depth during the last search. */
     UInt _maxSearchDepth;
+
+    UInt _readDiskOperationsCount;
+
+    UInt _writeDiskOperationsCount;
+
+    UInt _seekDiskOperationsCount;
 
     /** \brief The stream into / from which the tree is written / read. */
     std::iostream* _stream;

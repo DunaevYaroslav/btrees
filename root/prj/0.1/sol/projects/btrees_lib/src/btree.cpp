@@ -67,6 +67,7 @@ void BaseBTree::readPage(UInt pnum, Byte* dst)
         throw std::invalid_argument("Can't read a non-existing page");
 
     readPageInternal(pnum, dst);
+    ++_readDiskOperationsCount;
 }
 
 void BaseBTree::writePage(UInt pnum, const Byte* dst)
@@ -77,12 +78,15 @@ void BaseBTree::writePage(UInt pnum, const Byte* dst)
         throw std::invalid_argument("Can't write a non-existing page");
 
     writePageInternal(pnum, dst);
-
+    ++_writeDiskOperationsCount;
 }
 
 UInt BaseBTree::allocPage(PageWrapper& pw, UShort keysNum, bool isLeaf)
 {
     checkForOpenStream();
+
+    ++_writeDiskOperationsCount;
+    ++_seekDiskOperationsCount;
 
 #ifdef BTREE_WITH_REUSING_FREE_PAGES
 
@@ -679,12 +683,16 @@ void BaseBTree::loadFreePagesCounter()
 {
     _stream->seekg(getFreePagesInfoAreaOfs(), std::ios_base::beg);
     _stream->read((char*)&_freePagesCounter, FREE_PAGES_COUNTER_SZ);
+    ++_seekDiskOperationsCount;
+    ++_readDiskOperationsCount;
 }
 
 void BaseBTree::writeFreePagesCounter()
 {
     _stream->seekg(getFreePagesInfoAreaOfs(), std::ios_base::beg);
     _stream->write((const char*)&_freePagesCounter, FREE_PAGES_COUNTER_SZ);
+    ++_seekDiskOperationsCount;
+    ++_writeDiskOperationsCount;
 }
 
 UInt BaseBTree::getLastFreePageNum()
@@ -692,6 +700,8 @@ UInt BaseBTree::getLastFreePageNum()
     UInt result;
     _stream->seekg(getLastFreePageNumOfs(), std::ios_base::beg);
     _stream->read((char*)&result, FREE_PAGE_NUM_SZ);
+    ++_seekDiskOperationsCount;
+    ++_readDiskOperationsCount;
     return result;
 }
 
@@ -726,6 +736,8 @@ void BaseBTree::markPageFree(UInt pageNum)
 
     _stream->seekg(getLastFreePageNumOfs() + FREE_PAGE_NUM_SZ, std::ios_base::beg);
     _stream->write((const char*)&pageNum, FREE_PAGE_NUM_SZ);
+    ++_seekDiskOperationsCount;
+    ++_writeDiskOperationsCount;
 
     ++_freePagesCounter;
     writeFreePagesCounter();
@@ -772,6 +784,7 @@ void BaseBTree::gotoPage(UInt pnum)
 {
     UInt pageOfs = FIRST_PAGE_OFS + getNodePageSize() * (pnum - 1);
     _stream->seekg(pageOfs, std::ios_base::beg);
+    ++_seekDiskOperationsCount;
 }
 
 void BaseBTree::loadTree()
@@ -858,37 +871,47 @@ void BaseBTree::writeHeader()
 {    
     Header hdr(_order, _recSize);    
     _stream->write((const char*)(void*)&hdr, HEADER_SIZE);
+    ++_writeDiskOperationsCount;
 }
 
 void BaseBTree::readHeader(Header& hdr)
 {
     _stream->seekg(HEADER_OFS, std::ios_base::beg);
     _stream->read((char*)&hdr, HEADER_SIZE);
+    ++_seekDiskOperationsCount;
+    ++_readDiskOperationsCount;
 }
 
 void BaseBTree::writePageCounter()
 {
     _stream->seekg(PAGE_COUNTER_OFS, std::ios_base::beg);
     _stream->write((const char*)&_lastPageNum, PAGE_COUNTER_SZ);
+    ++_seekDiskOperationsCount;
+    ++_writeDiskOperationsCount;
 }
 
 void BaseBTree::readPageCounter()
 {
-    _stream->seekg(PAGE_COUNTER_OFS, std::ios_base::beg);    
+    _stream->seekg(PAGE_COUNTER_OFS, std::ios_base::beg);
     _stream->read((char*)&_lastPageNum, PAGE_COUNTER_SZ);
+    ++_seekDiskOperationsCount;
+    ++_readDiskOperationsCount;
 }
 
 void BaseBTree::writeRootPageNum()
 {
     _stream->seekg(ROOT_PAGE_NUM_OFS, std::ios_base::beg);
     _stream->write((const char*)&_rootPageNum, ROOT_PAGE_NUM_SZ);
-
+    ++_seekDiskOperationsCount;
+    ++_writeDiskOperationsCount;
 }
 
 void BaseBTree::readRootPageNum()
 {
     _stream->seekg(ROOT_PAGE_NUM_OFS, std::ios_base::beg);
     _stream->read((char*)&_rootPageNum, ROOT_PAGE_NUM_SZ);
+    ++_seekDiskOperationsCount;
+    ++_readDiskOperationsCount;
 }
 
 void BaseBTree::setRootPageNum(UInt pnum, bool writeFlag /*= true*/)
