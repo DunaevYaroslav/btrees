@@ -564,7 +564,7 @@ protected:
      * \param currentPage The given page.
      * \returns The amount of all the occurrences of the key k in the given subtree.
      */
-    virtual int removeAll(const Byte* k, PageWrapper& currentPage);
+    int removeAll(const Byte* k, PageWrapper& currentPage);
 
     /**
      * \brief Removes the key with the given number recursively in the given page.
@@ -609,6 +609,12 @@ protected:
      */
     virtual void mergeChildren(PageWrapper& leftChild, PageWrapper& rightChild,
             PageWrapper& currentPage, UShort medianNum);
+
+    void moveOneKeyFromLeft(PageWrapper& leftNeighbour, PageWrapper& child,
+            PageWrapper& currentPage, UShort childCursorNum);
+
+    void moveOneKeyFromRight(PageWrapper& rightNeighbour, PageWrapper& child,
+            PageWrapper& currentPage, UShort childCursorNum);
 
 #endif
 
@@ -801,8 +807,6 @@ protected:
 
     virtual bool remove(const Byte* k, PageWrapper& currentPage) override;
 
-    virtual int removeAll(const Byte* k, PageWrapper& currentPage) override;
-
     virtual void mergeChildren(PageWrapper& leftChild, PageWrapper& rightChild,
             PageWrapper& currentPage, UShort medianNum) override;
 
@@ -942,6 +946,8 @@ protected:
     virtual void splitChildren(PageWrapper& node, UShort iLeft, PageWrapper& left,
             PageWrapper& middle, PageWrapper& right, bool isShort);
 
+    virtual bool removeByKeyNum(UShort keyNum, PageWrapper& currentPage) override;
+
     /**
      * \brief Shares keys from the child to its left sibling to make this child non-full and inserts the key \param k.
      *
@@ -1028,8 +1034,6 @@ protected:
 #ifdef BTREE_WITH_DELETION
 
     virtual bool remove(const Byte* k, PageWrapper& currentPage) override;
-
-    virtual int removeAll(const Byte* k, PageWrapper& currentPage) override;
 
     virtual void mergeChildren(PageWrapper& leftChild, PageWrapper& rightChild,
             PageWrapper& currentPage, UShort medianNum) override;

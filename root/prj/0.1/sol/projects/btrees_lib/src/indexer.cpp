@@ -30,7 +30,7 @@ bool Indexer::NameComparator::compare(const Byte* lhv, const Byte* rhv, UInt sz)
 
     int i = 0;
 
-    for( ; i < NAME_LENGTH; i += 2)
+    for( ; i < sz; i += 2)
     {
         wchar_t lchar = lhv[i];
         wchar_t rchar = rhv[i];
@@ -45,7 +45,7 @@ bool Indexer::NameComparator::compare(const Byte* lhv, const Byte* rhv, UInt sz)
             return false;
     }
 
-    if(i < NAME_LENGTH)
+    if(i < sz)
     {
         wchar_t lchar = lhv[i];
         wchar_t rchar = rhv[i];
@@ -67,19 +67,19 @@ bool Indexer::NameComparator::isEqual(const Byte* lhv, const Byte* rhv, UInt sz)
 
     int i = 0;
 
-    for( ; i < NAME_LENGTH; i += 2)
+    for( ; i < sz; i += 2)
     {
         wchar_t lchar = lhv[i];
         wchar_t rchar = rhv[i];
 
-        if(lchar == 0 || rchar == 0)
-            break;
+//        if(lchar == 0 || rchar == 0)
+//            break;
 
         if(lchar != rchar)
             return false;
     }
 
-    if(i < NAME_LENGTH)
+    if(i < sz)
     {
         wchar_t lchar = lhv[i];
         wchar_t rchar = rhv[i];

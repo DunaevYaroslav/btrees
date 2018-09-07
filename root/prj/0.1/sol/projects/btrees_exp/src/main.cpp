@@ -31,6 +31,34 @@ const std::regex csvFileNameRegex("^(\\S*)\\.csv$");
 
 const int CSV_FILE_NAME_REGEX_BEFORE_EXTENSION = 1;
 
+struct ByteComparator : public BaseBTree::IComparator {
+    virtual bool compare(const Byte* lhv, const Byte* rhv, UInt sz) override
+    {
+        for (UInt i = 0; i < sz; ++i)
+        {
+            if (lhv[i] < rhv[i])
+                return true;
+        }
+
+        return false;
+    }
+
+    // простейшая реализация — побайтное сравнение
+    virtual bool isEqual(const Byte* lhv, const Byte* rhv, UInt sz) override
+    {
+        for (UInt i = 0; i < sz; ++i)
+        {
+            if (lhv[i] != rhv[i])
+                return false;
+        }
+
+        return true;
+    }
+
+
+
+}; // struct ByteComparator
+
 Experiment parseExperiment(const std::string& line);
 
 BaseBTree::TreeType parseTreeType(const std::string& treeTypeString);
@@ -80,7 +108,8 @@ int main(int argc, char* argv[])
 
     inputFile.close();
 
-    std::string outputFileName = std::string(match[CSV_FILE_NAME_REGEX_BEFORE_EXTENSION]) + std::string(".csv");
+    std::string outputFileName = std::string(match[CSV_FILE_NAME_REGEX_BEFORE_EXTENSION])
+            + "_results" + std::string(".csv");
     std::ofstream outputFile(outputFileName);
 
     if (!outputFile.is_open())
@@ -150,7 +179,9 @@ void makeExperiment(const Experiment& experiment, std::ofstream& outputFile, int
     indexer.create(experiment.getTreeType(), experiment.getTreeOrder(), std::to_string(experimentNumber)
             + std::string(".xibt"));
 
-    FileBaseBTree* tree = indexer.getTree();
+    ByteComparator comparator;
+    FileBaseBTree* tree = new FileBaseBTree(experiment.getTreeType(), experiment.getTreeOrder(), sizeof(int),
+            &comparator, std::string("int_") + std::to_string(experimentNumber) + std::string(".xibt"));
 
     clock_t time = 0;
     UInt usedMemory = 0;
@@ -170,6 +201,8 @@ void makeExperiment(const Experiment& experiment, std::ofstream& outputFile, int
             writeDiskOperationsCount += tree->getTree()->getWriteDiskOperationsCount();
             seekDiskOperationsCount += tree->getTree()->getSeekDiskOperationsCount();
         }
+        else
+            tree->insert((Byte*) &i);
     }
 
     time /= MEASURING_KEYS_COUNT;
@@ -295,13 +328,13 @@ void makeExperiment(const Experiment& experiment, std::ofstream& outputFile, int
 
 void writeCsvHeader(std::ofstream& outputFile)
 {
-    outputFile << "InsertionTime;SearchTime;RemovingTime;IndexingTime;IndexSearchingTime" << std::endl
+    outputFile << "Number;InsertionTime;SearchTime;RemovingTime;IndexingTime;IndexSearchingTime;"
             << "InsertionUsedMemory;SearchUsedMemory;RemovingUsedMemory;"
-            << "IndexingUsedMemory;IndexSearchingUsedMemory" << std::endl
+            << "IndexingUsedMemory;IndexSearchingUsedMemory;"
             << "InsertionReadDiskOperationsCount;SearchReadDiskOperationsCount;RemovingReadDiskOperationsCount;"
-            << "IndexingReadDiskOperationsCount;IndexSearchingReadDiskOperationsCount" << std::endl
+            << "IndexingReadDiskOperationsCount;IndexSearchingReadDiskOperationsCount;"
             << "InsertionWriteDiskOperationsCount;SearchWriteDiskOperationsCount;RemovingWriteDiskOperationsCount;"
-            << "IndexingWriteDiskOperationsCount;IndexSearchingWriteDiskOperationsCount" << std::endl
+            << "IndexingWriteDiskOperationsCount;IndexSearchingWriteDiskOperationsCount;"
             << "InsertionSeekDiskOperationsCount;SearchSeekDiskOperationsCount;RemovingSeekDiskOperationsCount;"
-            << "IndexingSeekDiskOperationsCount;IndexSearchingSeekDiskOperationsCount" << std::endl;
+            << "IndexingSeekDiskOperationsCount;IndexSearchingSeekDiskOperationsCount;" << std::endl;
 }
