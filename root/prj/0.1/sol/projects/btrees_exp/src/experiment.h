@@ -23,9 +23,8 @@ class Experiment
 
 public:
 
-    Experiment(BaseBTree::TreeType treeType, UShort treeOrder, UInt treeKeysSize,
-               std::string dataFilePath, std::string searchedName)
-            : _treeType(treeType), _treeOrder(treeOrder), _treeKeysSize(treeKeysSize),
+    Experiment(BaseBTree::TreeType treeType, UShort treeOrder, std::string dataFilePath, std::string searchedName)
+            : _treeType(treeType), _treeOrder(treeOrder),
             _dataFilePath(std::move(dataFilePath)), _searchedName(std::move(searchedName)) { }
 
     Experiment(const Experiment& other) = default;
@@ -40,8 +39,6 @@ public:
 
     UShort getTreeOrder() const { return _treeOrder; }
 
-    UInt getTreeKeysSize() const { return _treeKeysSize; }
-
     const std::string& getDataFilePath() const { return _dataFilePath; }
 
     const std::string& getSearchedName() const { return _searchedName; }
@@ -51,8 +48,6 @@ private:
     BaseBTree::TreeType _treeType;
 
     UShort _treeOrder;
-
-    UInt _treeKeysSize;
 
     std::string _dataFilePath;
 
@@ -79,119 +74,77 @@ public:
 
     clock_t getInsertionTime() const { return _insertionTime; }
 
-    void setInsertionTime(clock_t _insertionTime) { _insertionTime = _insertionTime; }
+    void setInsertionTime(clock_t insertionTime) { _insertionTime = insertionTime; }
 
     clock_t getSearchTime() const { return _searchTime; }
 
-    void setSearchTime(clock_t _searchTime) { _searchTime = _searchTime; }
+    void setSearchTime(clock_t searchTime) { _searchTime = searchTime; }
 
     clock_t getRemovingTime() const { return _removingTime; }
 
-    void setRemovingTime(clock_t _removingTime) { _removingTime = _removingTime; }
+    void setRemovingTime(clock_t removingTime) { _removingTime = removingTime; }
 
     clock_t getIndexingTime() const { return _indexingTime; }
 
-    void setIndexingTime(clock_t _indexingTime) { _indexingTime = _indexingTime; }
+    void setIndexingTime(clock_t indexingTime) { _indexingTime = indexingTime; }
 
     clock_t getIndexSearchingTime() const { return _indexSearchingTime; }
 
-    void setIndexSearchingTime(clock_t _indexSearchingTime) { _indexSearchingTime = _indexSearchingTime; }
+    void setIndexSearchingTime(clock_t indexSearchingTime) { _indexSearchingTime = indexSearchingTime; }
 
     UInt getInsertionUsedMemory() const { return _insertionUsedMemory; }
 
-    void setInsertionUsedMemory(UInt _insertionUsedMemory) { _insertionUsedMemory = _insertionUsedMemory; }
+    void setInsertionUsedMemory(UInt insertionUsedMemory) { _insertionUsedMemory = insertionUsedMemory; }
 
     UInt getSearchUsedMemory() const { return _searchUsedMemory; }
 
-    void setSearchUsedMemory(UInt _searchUsedMemory) { _searchUsedMemory = _searchUsedMemory; }
+    void setSearchUsedMemory(UInt searchUsedMemory) { _searchUsedMemory = searchUsedMemory; }
 
     UInt getRemovingUsedMemory() const { return _removingUsedMemory; }
 
-    void setRemovingUsedMemory(UInt _removingUsedMemory) { _removingUsedMemory = _removingUsedMemory; }
+    void setRemovingUsedMemory(UInt removingUsedMemory) { _removingUsedMemory = removingUsedMemory; }
 
     UInt getIndexingUsedMemory() const { return _indexingUsedMemory; }
 
-    void setIndexingUsedMemory(UInt _indexingUsedMemory) { _indexingUsedMemory = _indexingUsedMemory; }
+    void setIndexingUsedMemory(UInt indexingUsedMemory) { _indexingUsedMemory = indexingUsedMemory; }
 
     UInt getIndexSearchingUsedMemory() const { return _indexSearchingUsedMemory; }
 
-    void setIndexSearchingUsedMemory(UInt _indexSearchingUsedMemory)
-            { _indexSearchingUsedMemory = _indexSearchingUsedMemory; }
+    void setIndexSearchingUsedMemory(UInt indexSearchingUsedMemory)
+            { _indexSearchingUsedMemory = indexSearchingUsedMemory; }
 
-    UInt getInsertionReadDiskOperationsCount() const { return _insertionReadDiskOperationsCount; }
+    double getInsertionDiskOperationsCount() const { return _insertionDiskOperationsCount; }
 
-    void setInsertionReadDiskOperationsCount(UInt _insertionReadDiskOperationsCount)
-            { _insertionReadDiskOperationsCount = _insertionReadDiskOperationsCount; }
+    void setInsertionDiskOperationsCount(double insertionDiskOperationsCount)
+            { _insertionDiskOperationsCount = insertionDiskOperationsCount; }
 
-    UInt getSearchReadDiskOperationsCount() const { return _searchReadDiskOperationsCount; }
+    double getSearchDiskOperationsCount() const { return _searchDiskOperationsCount; }
 
-    void setSearchReadDiskOperationsCount(UInt _searchReadDiskOperationsCount)
-            { _searchReadDiskOperationsCount = _searchReadDiskOperationsCount; }
+    void setSearchDiskOperationsCount(double searchDiskOperationsCount)
+            { _searchDiskOperationsCount = searchDiskOperationsCount; }
 
-    UInt getRemovingReadDiskOperationsCount() const { return _removingReadDiskOperationsCount; }
+    double getRemovingDiskOperationsCount() const { return _removingDiskOperationsCount; }
 
-    void setRemovingReadDiskOperationsCount(UInt _removingReadDiskOperationsCount)
-            { _removingReadDiskOperationsCount = _removingReadDiskOperationsCount; }
+    void setRemovingDiskOperationsCount(double removingDiskOperationsCount)
+            { _removingDiskOperationsCount = removingDiskOperationsCount; }
 
-    UInt getIndexingReadDiskOperationsCount() const { return _indexingReadDiskOperationsCount; }
+    double getIndexingDiskOperationsCount() const { return _indexingDiskOperationsCount; }
 
-    void setIndexingReadDiskOperationsCount(UInt _indexingReadDiskOperationsCount)
-            { _indexingReadDiskOperationsCount = _indexingReadDiskOperationsCount; }
+    void setIndexingDiskOperationsCount(double indexingDiskOperationsCount)
+            { _indexingDiskOperationsCount = indexingDiskOperationsCount; }
 
-    UInt getIndexSearchingReadDiskOperationsCount() const { return _indexSearchingReadDiskOperationsCount; }
+    double getIndexSearchingDiskOperationsCount() const { return _indexSearchingDiskOperationsCount; }
 
-    void setIndexSearchingReadDiskOperationsCount(UInt _indexSearchingReadDiskOperationsCount)
-            { _indexSearchingReadDiskOperationsCount = _indexSearchingReadDiskOperationsCount; }
+    void setIndexSearchingDiskOperationsCount(double indexSearchingDiskOperationsCount)
+            { _indexSearchingDiskOperationsCount = indexSearchingDiskOperationsCount; }
 
-    UInt getInsertionWriteDiskOperationsCount() const { return _insertionWriteDiskOperationsCount; }
+    UInt getMaxSearchDepth() const { return _maxSearchDepth; }
 
-    void setInsertionWriteDiskOperationsCount(UInt _insertionWriteDiskOperationsCount)
-            { _insertionWriteDiskOperationsCount = _insertionWriteDiskOperationsCount; }
+    UInt setMaxSearchDepth(UInt maxSearchDepth) { _maxSearchDepth = maxSearchDepth; }
 
-    UInt getSearchWriteDiskOperationsCount() const { return _searchWriteDiskOperationsCount; }
+    UInt getIndexMaxSearchDepth() const { return _indexMaxSearchDepth; }
 
-    void setSearchWriteDiskOperationsCount(UInt _searchWriteDiskOperationsCount)
-            { _searchWriteDiskOperationsCount = _searchWriteDiskOperationsCount; }
-
-    UInt getRemovingWriteDiskOperationsCount() const { return _removingWriteDiskOperationsCount; }
-
-    void setRemovingWriteDiskOperationsCount(UInt _removingWriteDiskOperationsCount)
-            { _removingWriteDiskOperationsCount = _removingWriteDiskOperationsCount; }
-
-    UInt getIndexingWriteDiskOperationsCount() const { return _indexingWriteDiskOperationsCount; }
-
-    void setIndexingWriteDiskOperationsCount(UInt _indexingWriteDiskOperationsCount)
-            { _indexingWriteDiskOperationsCount = _indexingWriteDiskOperationsCount; }
-
-    UInt getIndexSearchingWriteDiskOperationsCount() const { return _indexSearchingWriteDiskOperationsCount; }
-
-    void setIndexSearchingWriteDiskOperationsCount(UInt _indexSearchingWriteDiskOperationsCount)
-            { _indexSearchingWriteDiskOperationsCount = _indexSearchingWriteDiskOperationsCount; }
-
-    UInt getInsertionSeekDiskOperationsCount() const { return _insertionSeekDiskOperationsCount; }
-
-    void setInsertionSeekDiskOperationsCount(UInt _insertionSeekDiskOperationsCount)
-            { _insertionSeekDiskOperationsCount = _insertionSeekDiskOperationsCount; }
-
-    UInt getSearchSeekDiskOperationsCount() const { return _searchSeekDiskOperationsCount; }
-
-    void setSearchSeekDiskOperationsCount(UInt _searchSeekDiskOperationsCount)
-            { _searchSeekDiskOperationsCount = _searchSeekDiskOperationsCount; }
-
-    UInt getRemovingSeekDiskOperationsCount() const { return _removingSeekDiskOperationsCount; }
-
-    void setRemovingSeekDiskOperationsCount(UInt _removingSeekDiskOperationsCount)
-            { _removingSeekDiskOperationsCount = _removingSeekDiskOperationsCount; }
-
-    UInt getIndexingSeekDiskOperationsCount() const { return _indexingSeekDiskOperationsCount; }
-
-    void setIndexingSeekDiskOperationsCount(UInt _indexingSeekDiskOperationsCount)
-            { _indexingSeekDiskOperationsCount = _indexingSeekDiskOperationsCount; }
-
-    UInt getIndexSearchingSeekDiskOperationsCount() const { return _indexSearchingSeekDiskOperationsCount; }
-
-    void setIndexSearchingSeekDiskOperationsCount(UInt _indexSearchingSeekDiskOperationsCount)
-            { _indexSearchingSeekDiskOperationsCount = _indexSearchingSeekDiskOperationsCount; }
+    UInt setIndexMaxSearchDepth(UInt indexMaxSearchDepth) { _indexMaxSearchDepth = indexMaxSearchDepth; }
 
 private:
 
@@ -209,23 +162,14 @@ private:
     UInt _indexingUsedMemory = 0;
     UInt _indexSearchingUsedMemory = 0;
 
-    UInt _insertionReadDiskOperationsCount = 0;
-    UInt _searchReadDiskOperationsCount = 0;
-    UInt _removingReadDiskOperationsCount = 0;
-    UInt _indexingReadDiskOperationsCount = 0;
-    UInt _indexSearchingReadDiskOperationsCount = 0;
+    double _insertionDiskOperationsCount = 0;
+    double _searchDiskOperationsCount = 0;
+    double _removingDiskOperationsCount = 0;
+    double _indexingDiskOperationsCount = 0;
+    double _indexSearchingDiskOperationsCount = 0;
 
-    UInt _insertionWriteDiskOperationsCount = 0;
-    UInt _searchWriteDiskOperationsCount = 0;
-    UInt _removingWriteDiskOperationsCount = 0;
-    UInt _indexingWriteDiskOperationsCount = 0;
-    UInt _indexSearchingWriteDiskOperationsCount = 0;
-
-    UInt _insertionSeekDiskOperationsCount = 0;
-    UInt _searchSeekDiskOperationsCount = 0;
-    UInt _removingSeekDiskOperationsCount = 0;
-    UInt _indexingSeekDiskOperationsCount = 0;
-    UInt _indexSearchingSeekDiskOperationsCount = 0;
+    UInt _maxSearchDepth;
+    UInt _indexMaxSearchDepth;
 };
 
 #endif //BTREES_EXPERIMENT_H

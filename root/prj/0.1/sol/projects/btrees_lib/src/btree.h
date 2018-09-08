@@ -505,16 +505,14 @@ public:
     /** \brief Returns the unzero number of the tree's root page or 0 if there are no pages in the tree. */
     UInt getRootPageNum() const { return _rootPageNum;  }
 
-    /**
-     * \brief Returns max depth reached during searching process.
-     */
+    /** \brief Returns max depth reached during searching process. */
     UInt getMaxSearchDepth() const { return _maxSearchDepth; }
 
-    UInt getReadDiskOperationsCount() const { return _readDiskOperationsCount; }
+    /** \brief Returns the disk operations count during the last insert/search/remove operation. */
+    UInt getDiskOperationsCount() const { return _diskOperationsCount; }
 
-    UInt getWriteDiskOperationsCount() const { return _writeDiskOperationsCount; }
-
-    UInt getSeekDiskOperationsCount() const { return _seekDiskOperationsCount; }
+        /** \brief Sets the disk operations count during the last insert/search/remove operation to 0. */
+    void resetDiskOperationsCount() { _diskOperationsCount = 0; }
 
      /** \brief Returns the reference to the current root page. */
     PageWrapper& getRootPage() { return _rootPage; }
@@ -610,9 +608,25 @@ protected:
     virtual void mergeChildren(PageWrapper& leftChild, PageWrapper& rightChild,
             PageWrapper& currentPage, UShort medianNum);
 
+    /**
+     * \brief Moves the last key of the child's left neighbour to the median's place
+     * and the median to the start of the child.
+     * \param leftNeighbour The child's left neighbour.
+     * \param child The child.
+     * \param currentPage The child's parent.
+     * \param childCursorNum The number of the parent's cursor to the child.
+     */
     void moveOneKeyFromLeft(PageWrapper& leftNeighbour, PageWrapper& child,
             PageWrapper& currentPage, UShort childCursorNum);
 
+    /**
+     * \brief Moves the first key of the child's right neighbour to the median's place
+     * and the median to the end of the child.
+     * \param rightNeighbour The child's right neighbour.
+     * \param child The child.
+     * \param currentPage The child's parent.
+     * \param childCursorNum The number of the parent's cursor to the child.
+     */
     void moveOneKeyFromRight(PageWrapper& rightNeighbour, PageWrapper& child,
             PageWrapper& currentPage, UShort childCursorNum);
 
@@ -751,11 +765,8 @@ protected:
     /** \brief The max reached tree's depth during the last search. */
     UInt _maxSearchDepth;
 
-    UInt _readDiskOperationsCount;
-
-    UInt _writeDiskOperationsCount;
-
-    UInt _seekDiskOperationsCount;
+    /** \brief The disk operations count during the last insert/search/remove operation. */
+    UInt _diskOperationsCount;
 
     /** \brief The stream into / from which the tree is written / read. */
     std::iostream* _stream;

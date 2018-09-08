@@ -16,6 +16,7 @@
 #include <regex>
 #include <ctime>
 #include <stdexcept>
+#include <malloc.h>
 
 #include "btree.h"
 #include "indexer.h"
@@ -31,7 +32,11 @@ const std::regex csvFileNameRegex("^(\\S*)\\.csv$");
 
 const int CSV_FILE_NAME_REGEX_BEFORE_EXTENSION = 1;
 
+size_t currentUsedMemory = 0;
+size_t maxUsedMemory = 0;
+
 struct ByteComparator : public BaseBTree::IComparator {
+
     virtual bool compare(const Byte* lhv, const Byte* rhv, UInt sz) override
     {
         for (UInt i = 0; i < sz; ++i)
@@ -43,7 +48,6 @@ struct ByteComparator : public BaseBTree::IComparator {
         return false;
     }
 
-    // простейшая реализация — побайтное сравнение
     virtual bool isEqual(const Byte* lhv, const Byte* rhv, UInt sz) override
     {
         for (UInt i = 0; i < sz; ++i)
@@ -54,10 +58,24 @@ struct ByteComparator : public BaseBTree::IComparator {
 
         return true;
     }
-
-
-
 }; // struct ByteComparator
+
+class DecimalPointLoc: public std::numpunct<char>
+{
+
+public:
+
+    typedef char char_type;
+
+    typedef std::string string_type;
+
+    explicit DecimalPointLoc(size_t r = 0): std::numpunct<char>(r) {}
+
+protected:
+
+    char do_decimal_point() const { return ','; }
+
+};
 
 Experiment parseExperiment(const std::string& line);
 
@@ -66,6 +84,14 @@ BaseBTree::TreeType parseTreeType(const std::string& treeTypeString);
 void makeExperiment(const Experiment& experiment, std::ofstream& outputFile, int experimentNumber);
 
 void writeCsvHeader(std::ofstream& outputFile);
+
+void* operator new(size_t size);
+
+void operator delete(void* p) noexcept;
+
+void* operator new[](size_t size);
+
+void operator delete[](void* p) noexcept;
 
 int main(int argc, char* argv[])
 {
@@ -100,10 +126,22 @@ int main(int argc, char* argv[])
 
     std::string line;
     std::getline(inputFile, line);
+    int i = 0;
     while (std::getline(inputFile, line))
     {
-        Experiment experiment = parseExperiment(line);
-        experiments.push_back(experiment);
+        try
+        {
+            Experiment experiment = parseExperiment(line);
+            experiments.push_back(experiment);
+        }
+        catch (std::invalid_argument& e)
+        {
+            std::cerr << "The error appeared during parsing the experiment " << i << ": " << e.what() << std::endl;
+        }
+        catch (std::out_of_range& e)
+        {
+            std::cerr << "The error appeared during parsing the experiment " << i << ": " << e.what() << std::endl;
+        }
     }
 
     inputFile.close();
@@ -121,9 +159,21 @@ int main(int argc, char* argv[])
 
     writeCsvHeader(outputFile);
 
-    int i = 0;
+    i = 0;
     for (std::vector<Experiment>::iterator iter = experiments.begin(); iter != experiments.end(); ++iter)
-        makeExperiment(*iter, outputFile, ++i);
+    {
+        std::cout << "Making the experiment " << ++i << "/" << experiments.size() << "..." << std::endl;
+        try
+        {
+            makeExperiment(*iter, outputFile, i);
+            std::cout << "The experiment " << i << "/" << experiments.size() << " is finished" << std::endl;
+        }
+        catch (std::invalid_argument& e)
+        {
+            std::cerr << "The error appeared during the making the experiment" << i << "/" << experiments.size() << ": "
+                    << e.what() << std::endl;
+        }
+    }
 
     outputFile.close();
 
@@ -144,17 +194,13 @@ Experiment parseExperiment(const std::string& line)
     std::getline(lineStream, treeOrderString, CSV_DELIM);
     UShort treeOrder = std::stoi(treeOrderString);
 
-    std::string treeKeysSizeString;
-    std::getline(lineStream, treeKeysSizeString, CSV_DELIM);
-    UInt treeKeysSize = std::stoi(treeKeysSizeString);
-
     std::string dataFilePath;
     std::getline(lineStream, dataFilePath, CSV_DELIM);
 
     std::string searchedName;
     std::getline(lineStream, searchedName, CSV_DELIM);
 
-    return Experiment(treeType, treeOrder, treeKeysSize, dataFilePath, searchedName);
+    return Experiment(treeType, treeOrder, dataFilePath, searchedName);
 }
 
 BaseBTree::TreeType parseTreeType(const std::string& treeTypeString)
@@ -184,120 +230,109 @@ void makeExperiment(const Experiment& experiment, std::ofstream& outputFile, int
             &comparator, std::string("int_") + std::to_string(experimentNumber) + std::string(".xibt"));
 
     clock_t time = 0;
-    UInt usedMemory = 0;
-    UInt readDiskOperationsCount = 0;
-    UInt writeDiskOperationsCount = 0;
-    UInt seekDiskOperationsCount = 0;
+    size_t usedMemory = 0;
+    UInt diskOperationsCount = 0;
 
+    clock_t start = std::clock();
     for (int i = 0; i < FULL_KEYS_COUNT; ++i)
     {
         if (i >= PREPARATION_KEYS_COUNT)
         {
-            clock_t start = std::clock();
+            maxUsedMemory = 0;
+            tree->getTree()->resetDiskOperationsCount();
+
             tree->insert((Byte*) &i);
-            clock_t end = std::clock();
-            time += end - start;
-            readDiskOperationsCount += tree->getTree()->getReadDiskOperationsCount();
-            writeDiskOperationsCount += tree->getTree()->getWriteDiskOperationsCount();
-            seekDiskOperationsCount += tree->getTree()->getSeekDiskOperationsCount();
+
+            usedMemory += maxUsedMemory;
+            diskOperationsCount += tree->getTree()->getDiskOperationsCount();
         }
         else
             tree->insert((Byte*) &i);
     }
-
-    time /= MEASURING_KEYS_COUNT;
-    usedMemory /= MEASURING_KEYS_COUNT;
-    readDiskOperationsCount /= MEASURING_KEYS_COUNT;
-    writeDiskOperationsCount /= MEASURING_KEYS_COUNT;
-    seekDiskOperationsCount /= MEASURING_KEYS_COUNT;
-    experimentResult.setInsertionTime(time);
-    experimentResult.setInsertionUsedMemory(usedMemory);
-    experimentResult.setInsertionReadDiskOperationsCount(readDiskOperationsCount);
-    experimentResult.setInsertionWriteDiskOperationsCount(writeDiskOperationsCount);
-    experimentResult.setInsertionSeekDiskOperationsCount(seekDiskOperationsCount);
-
-    time = 0;
-    usedMemory = 0;
-    readDiskOperationsCount = writeDiskOperationsCount = seekDiskOperationsCount = 0;
-
-    for (int i = 0; i < FULL_KEYS_COUNT; ++i)
-    {
-        clock_t start = std::clock();
-        tree->search((Byte*) &i);
-        clock_t end = std::clock();
-        time += end - start;
-        readDiskOperationsCount += tree->getTree()->getReadDiskOperationsCount();
-        writeDiskOperationsCount += tree->getTree()->getWriteDiskOperationsCount();
-        seekDiskOperationsCount += tree->getTree()->getSeekDiskOperationsCount();
-    }
-
-    time /= FULL_KEYS_COUNT;
-    usedMemory /= FULL_KEYS_COUNT;
-    readDiskOperationsCount /= FULL_KEYS_COUNT;
-    writeDiskOperationsCount /= FULL_KEYS_COUNT;
-    seekDiskOperationsCount /= FULL_KEYS_COUNT;
-    experimentResult.setSearchTime(time);
-    experimentResult.setSearchUsedMemory(usedMemory);
-    experimentResult.setSearchReadDiskOperationsCount(readDiskOperationsCount);
-    experimentResult.setSearchWriteDiskOperationsCount(writeDiskOperationsCount);
-    experimentResult.setSearchSeekDiskOperationsCount(seekDiskOperationsCount);
-
-    time = 0;
-    usedMemory = 0;
-    readDiskOperationsCount = writeDiskOperationsCount = seekDiskOperationsCount = 0;
-
-    for (int i = 0; i < FULL_KEYS_COUNT; ++i)
-    {
-        clock_t start = std::clock();
-        tree->remove((Byte*) &i);
-        clock_t end = std::clock();
-        time += end - start;
-        readDiskOperationsCount += tree->getTree()->getReadDiskOperationsCount();
-        writeDiskOperationsCount += tree->getTree()->getWriteDiskOperationsCount();
-        seekDiskOperationsCount += tree->getTree()->getSeekDiskOperationsCount();
-    }
-
-    time /= FULL_KEYS_COUNT;
-    usedMemory /= FULL_KEYS_COUNT;
-    readDiskOperationsCount /= FULL_KEYS_COUNT;
-    writeDiskOperationsCount /= FULL_KEYS_COUNT;
-    seekDiskOperationsCount /= FULL_KEYS_COUNT;
-    experimentResult.setRemovingTime(time);
-    experimentResult.setRemovingUsedMemory(usedMemory);
-    experimentResult.setRemovingReadDiskOperationsCount(readDiskOperationsCount);
-    experimentResult.setRemovingWriteDiskOperationsCount(writeDiskOperationsCount);
-    experimentResult.setRemovingSeekDiskOperationsCount(seekDiskOperationsCount);
-
-    clock_t start = std::clock();
-    indexer.indexFile(experiment.getDataFilePath());
     clock_t end = std::clock();
     time = end - start;
-    readDiskOperationsCount = indexer.getReadDiskOperationsCount();
-    writeDiskOperationsCount = indexer.getWriteDiskOperationsCount();
-    seekDiskOperationsCount = indexer.getSeekDiskOperationsCount();
+
+    usedMemory /= MEASURING_KEYS_COUNT;
+    experimentResult.setInsertionTime(time);
+    experimentResult.setInsertionUsedMemory(usedMemory);
+    experimentResult.setInsertionDiskOperationsCount(((double) diskOperationsCount) / MEASURING_KEYS_COUNT);
+
+    usedMemory = 0;
+    diskOperationsCount = 0;
+
+    start = std::clock();
+    for (int i = 0; i < FULL_KEYS_COUNT; ++i)
+    {
+        maxUsedMemory = 0;
+        tree->getTree()->resetDiskOperationsCount();
+
+        tree->search((Byte*) &i);
+
+        usedMemory += maxUsedMemory;
+        diskOperationsCount += tree->getTree()->getDiskOperationsCount();
+    }
+    end = std::clock();
+    time += end - start;
+
+    usedMemory /= FULL_KEYS_COUNT;
+    experimentResult.setSearchTime(time);
+    experimentResult.setSearchUsedMemory(usedMemory);
+    experimentResult.setSearchDiskOperationsCount(((double) diskOperationsCount) / FULL_KEYS_COUNT);
+    experimentResult.setMaxSearchDepth(tree->getTree()->getMaxSearchDepth());
+
+    time = 0;
+    usedMemory = 0;
+    diskOperationsCount = 0;
+
+    start = std::clock();
+    for (int i = 0; i < FULL_KEYS_COUNT; ++i)
+    {
+        maxUsedMemory = 0;
+        tree->getTree()->resetDiskOperationsCount();
+
+        tree->remove((Byte*) &i);
+
+        usedMemory += maxUsedMemory;
+        diskOperationsCount += tree->getTree()->getDiskOperationsCount();
+    }
+    end = std::clock();
+    time += end - start;
+
+    usedMemory /= FULL_KEYS_COUNT;
+    experimentResult.setRemovingTime(time);
+    experimentResult.setRemovingUsedMemory(usedMemory);
+    experimentResult.setRemovingDiskOperationsCount(((double) diskOperationsCount) / FULL_KEYS_COUNT);
+
+    indexer.resetDiskOperationsCount();
+    start = std::clock();
+    indexer.indexFile(experiment.getDataFilePath());
+    end = std::clock();
+    time = end - start;
+    usedMemory = maxUsedMemory;
+    diskOperationsCount = indexer.getDiskOperationsCount();
 
     experimentResult.setIndexingTime(time);
     experimentResult.setIndexingUsedMemory(usedMemory);
-    experimentResult.setIndexingReadDiskOperationsCount(readDiskOperationsCount);
-    experimentResult.setIndexingWriteDiskOperationsCount(writeDiskOperationsCount);
-    experimentResult.setIndexingSeekDiskOperationsCount(seekDiskOperationsCount);
+    experimentResult.setIndexingDiskOperationsCount(diskOperationsCount);
 
     const std::string& searchedName = experiment.getSearchedName();
 
+    indexer.resetDiskOperationsCount();
     start = std::clock();
     indexer.findAllOccurrences(std::wstring(searchedName.begin(), searchedName.end()),
                                experiment.getDataFilePath());
     end = std::clock();
     time = end - start;
-    readDiskOperationsCount = indexer.getReadDiskOperationsCount();
-    writeDiskOperationsCount = indexer.getWriteDiskOperationsCount();
-    seekDiskOperationsCount = indexer.getSeekDiskOperationsCount();
+    usedMemory = maxUsedMemory;
+    diskOperationsCount = indexer.getDiskOperationsCount();
     experimentResult.setIndexSearchingTime(time);
     experimentResult.setIndexSearchingUsedMemory(usedMemory);
-    experimentResult.setIndexSearchingReadDiskOperationsCount(readDiskOperationsCount);
-    experimentResult.setIndexSearchingWriteDiskOperationsCount(writeDiskOperationsCount);
-    experimentResult.setIndexingSeekDiskOperationsCount(seekDiskOperationsCount);
+    experimentResult.setIndexSearchingDiskOperationsCount(diskOperationsCount);
+    experimentResult.setIndexMaxSearchDepth(indexer.getMaxSearchDepth());
 
+    DecimalPointLoc decimalPointLoc;
+    outputFile.imbue(std::locale(std::locale(), &decimalPointLoc));
+    outputFile.precision(3);
     outputFile << experimentNumber << CSV_DELIM
             << experimentResult.getInsertionTime() << CSV_DELIM
             << experimentResult.getSearchTime() << CSV_DELIM
@@ -309,21 +344,13 @@ void makeExperiment(const Experiment& experiment, std::ofstream& outputFile, int
             << experimentResult.getRemovingUsedMemory() << CSV_DELIM
             << experimentResult.getIndexingUsedMemory() << CSV_DELIM
             << experimentResult.getIndexSearchingUsedMemory() << CSV_DELIM
-            << experimentResult.getInsertionReadDiskOperationsCount() << CSV_DELIM
-            << experimentResult.getSearchReadDiskOperationsCount() << CSV_DELIM
-            << experimentResult.getRemovingReadDiskOperationsCount() << CSV_DELIM
-            << experimentResult.getIndexingReadDiskOperationsCount() << CSV_DELIM
-            << experimentResult.getIndexSearchingReadDiskOperationsCount() << CSV_DELIM
-            << experimentResult.getInsertionWriteDiskOperationsCount() << CSV_DELIM
-            << experimentResult.getSearchWriteDiskOperationsCount() << CSV_DELIM
-            << experimentResult.getRemovingWriteDiskOperationsCount() << CSV_DELIM
-            << experimentResult.getIndexingWriteDiskOperationsCount() << CSV_DELIM
-            << experimentResult.getIndexSearchingWriteDiskOperationsCount() << CSV_DELIM
-            << experimentResult.getInsertionSeekDiskOperationsCount() << CSV_DELIM
-            << experimentResult.getSearchSeekDiskOperationsCount() << CSV_DELIM
-            << experimentResult.getRemovingSeekDiskOperationsCount() << CSV_DELIM
-            << experimentResult.getIndexingSeekDiskOperationsCount() << CSV_DELIM
-            << experimentResult.getIndexSearchingSeekDiskOperationsCount() << std::endl;
+            << experimentResult.getInsertionDiskOperationsCount() << CSV_DELIM
+            << experimentResult.getSearchDiskOperationsCount() << CSV_DELIM
+            << experimentResult.getRemovingDiskOperationsCount() << CSV_DELIM
+            << experimentResult.getIndexingDiskOperationsCount() << CSV_DELIM
+            << experimentResult.getIndexSearchingDiskOperationsCount() << CSV_DELIM
+            << experimentResult.getMaxSearchDepth() << CSV_DELIM
+            << experimentResult.getIndexMaxSearchDepth() << std::endl;
 }
 
 void writeCsvHeader(std::ofstream& outputFile)
@@ -331,10 +358,32 @@ void writeCsvHeader(std::ofstream& outputFile)
     outputFile << "Number;InsertionTime;SearchTime;RemovingTime;IndexingTime;IndexSearchingTime;"
             << "InsertionUsedMemory;SearchUsedMemory;RemovingUsedMemory;"
             << "IndexingUsedMemory;IndexSearchingUsedMemory;"
-            << "InsertionReadDiskOperationsCount;SearchReadDiskOperationsCount;RemovingReadDiskOperationsCount;"
-            << "IndexingReadDiskOperationsCount;IndexSearchingReadDiskOperationsCount;"
-            << "InsertionWriteDiskOperationsCount;SearchWriteDiskOperationsCount;RemovingWriteDiskOperationsCount;"
-            << "IndexingWriteDiskOperationsCount;IndexSearchingWriteDiskOperationsCount;"
-            << "InsertionSeekDiskOperationsCount;SearchSeekDiskOperationsCount;RemovingSeekDiskOperationsCount;"
-            << "IndexingSeekDiskOperationsCount;IndexSearchingSeekDiskOperationsCount;" << std::endl;
+            << "InsertionDiskOperationsCount;SearchDiskOperationsCount;RemovingDiskOperationsCount;"
+            << "IndexingDiskOperationsCount;IndexSearchingDiskOperationsCount;"
+            << "MaxSearchDepth;IndexMaxSearchDepth" << std::endl;
+}
+
+void* operator new(size_t size)
+{
+    void* p = malloc(size);
+    currentUsedMemory += _msize(p);
+    if (currentUsedMemory > maxUsedMemory)
+        maxUsedMemory = currentUsedMemory;
+    return p;
+}
+
+void operator delete(void* p) noexcept
+{
+    currentUsedMemory -= _msize(p);
+    free(p);
+}
+
+void* operator new[](size_t size)
+{
+    return ::operator new(size);
+}
+
+void operator delete[](void* p) noexcept
+{
+    ::operator delete(p);
 }

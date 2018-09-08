@@ -16,7 +16,6 @@
 
 using namespace btree;
 
-/** \brief Тестовый класс для тестирования открытых интерфейсов B*+-tree. */
 class BStarPlusTreeTest : public ::testing::Test {
 
 public:
@@ -45,7 +44,7 @@ public:
 
 protected:
 
-    std::string _fn;        ///< Имя файла
+    std::string _fn;
 
 }; // class BStarPlusTreeTest
 
@@ -57,7 +56,6 @@ struct ByteComparator : public BaseBTree::IComparator {
         return false;
     }
 
-    // простейшая реализация — побайтное сравнение
     virtual bool isEqual(const Byte* lhv, const Byte* rhv, UInt sz) override
     {
         for (UInt i = 0; i < sz; ++i)
@@ -184,7 +182,6 @@ TEST_F(BStarPlusTreeTest, InsertS2)
     delete[] searched;
     EXPECT_EQ(1, bt.searchAll(&k, keys));
     EXPECT_EQ(1, keys.size());
-    Byte kek = *keys.back();
     EXPECT_EQ(k, *keys.back());
     clearKeysList(keys);
 
