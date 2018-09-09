@@ -30,7 +30,7 @@ bool Indexer::NameComparator::compare(const Byte* lhv, const Byte* rhv, UInt sz)
 
     int i = 0;
 
-    for( ; i < sz; i += 2)
+    for( ; i < NAME_LENGTH; i += 2)
     {
         wchar_t lchar = lhv[i];
         wchar_t rchar = rhv[i];
@@ -45,7 +45,7 @@ bool Indexer::NameComparator::compare(const Byte* lhv, const Byte* rhv, UInt sz)
             return false;
     }
 
-    if(i < sz)
+    if(i < NAME_LENGTH)
     {
         wchar_t lchar = lhv[i];
         wchar_t rchar = rhv[i];
@@ -67,19 +67,19 @@ bool Indexer::NameComparator::isEqual(const Byte* lhv, const Byte* rhv, UInt sz)
 
     int i = 0;
 
-    for( ; i < sz; i += 2)
+    for( ; i < NAME_LENGTH; i += 2)
     {
         wchar_t lchar = lhv[i];
         wchar_t rchar = rhv[i];
 
-//        if(lchar == 0 || rchar == 0)
-//            break;
+        if(lchar == 0 || rchar == 0)
+            break;
 
         if(lchar != rchar)
             return false;
     }
 
-    if(i < sz)
+    if(i < NAME_LENGTH)
     {
         wchar_t lchar = lhv[i];
         wchar_t rchar = rhv[i];
@@ -88,6 +88,21 @@ bool Indexer::NameComparator::isEqual(const Byte* lhv, const Byte* rhv, UInt sz)
     }
 
     return true;
+}
+
+std::string Indexer::NameKeyPrinter::print(const Byte* key, UInt sz)
+{
+    std::string result;
+
+    for (int i = 0; i < NAME_LENGTH; i += 2)
+    {
+        if (key[i] == 0)
+            break;
+
+        result += std::string(1, *((char*) &key[i]));
+    }
+
+    return result;
 }
 
 Indexer::~Indexer()
@@ -101,6 +116,7 @@ void Indexer::create(BaseBTree::TreeType treeType, UShort order, const std::stri
         delete _bt;
 
     _bt = new FileBaseBTree(treeType, order, sizeof(Key), &_comparator, treeFileName);
+    _bt->getTree()->setKeyPrinter(&_keyPrinter);
 
     lastFileName = "";
 }
@@ -111,6 +127,7 @@ void Indexer::open(BaseBTree::TreeType treeType, const std::string& treeFileName
         delete _bt;
 
     _bt = new FileBaseBTree(treeType, treeFileName, &_comparator);
+    _bt->getTree()->setKeyPrinter(&_keyPrinter);
 
     lastFileName = "";
 }

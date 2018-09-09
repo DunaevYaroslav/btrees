@@ -84,6 +84,12 @@ public:
         virtual bool isEqual(const Byte* lhv, const Byte* rhv, UInt sz);
     }; // struct NameComparator
 
+struct NameKeyPrinter : public BaseBTree::IKeyPrinter {
+
+    virtual std::string print(const Byte* key, UInt sz) override;
+
+}; // struct NameKeyPrinter
+
 public:
 
     /** \brief Destructor.
@@ -161,6 +167,8 @@ private:
 
     /** \brief The comparator of name part of the key. */
     NameComparator _comparator;
+
+    NameKeyPrinter _keyPrinter;
 
     /** \brief The name of the last indexed file.
      *

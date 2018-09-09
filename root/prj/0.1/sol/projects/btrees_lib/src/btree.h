@@ -295,6 +295,14 @@ public:
 
 #endif
 
+        /**
+         * \brief Writes the page into the Graphviz's DOT format into the given output stream \c ostream.
+         *
+         * \param ostream The given output stream.
+         * \param code The code of the page.
+         */
+        void writeDot(std::ostream& ostream, std::string& code);
+
     public:
         
         /** \brief For the non-fulfilled current node splits its fulfilled child node with number \c iChild
@@ -354,6 +362,25 @@ public:
         ~IComparator() {};
 
     }; // class IComparator
+
+    /** \brief Interface defining the key printing operation. */
+    class IKeyPrinter {
+
+    public:
+
+        /** \brief Returns the string appearence of the given \c key.
+         *
+         * \param key The given key for printing.
+         * \param sz The key's size (in bytes).
+         * \returns The string appearence of the given \c key.
+         */
+        virtual std::string print(const Byte* key, UInt sz) = 0;
+
+    protected:
+
+        ~IKeyPrinter() {};
+
+    }; // class IKeyPrinter
 
 public:
 
@@ -476,6 +503,12 @@ public:
 
 #endif
 
+    /** \brief Writes the tree into the Graphviz's DOT format into the given output stream \c ostream.
+     *
+     * \param ostream The given output stream.
+     */
+    void writeDot(std::ostream& ostream);
+
 public:
 
     /** \brief Returns the tree's order. */
@@ -525,6 +558,10 @@ public:
 
     /** \brief Returns the tree's comparator. */
     IComparator* getComparator() const { return _comparator; }
+
+    IKeyPrinter* getKeyPrinter() const { return _keyPrinter; }
+
+    void setKeyPrinter(IKeyPrinter* keyPrinter) { _keyPrinter = keyPrinter; }
 
     void setStream(std::iostream* s) { _stream  = s; }
 
@@ -776,6 +813,8 @@ protected:
 
     /** \brief Comparator for the keys comparing. */
     IComparator* _comparator;
+
+    IKeyPrinter* _keyPrinter;
 
 #ifdef BTREE_WITH_REUSING_FREE_PAGES
 

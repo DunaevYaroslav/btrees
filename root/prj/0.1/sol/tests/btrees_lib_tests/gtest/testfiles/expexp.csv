@@ -1,0 +1,25 @@
+Tree type;Tree order;Int keys count;Data file path;Searched name
+B_TREE;6;30;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_PLUS_TREE;6;30;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_STAR_TREE;6;30;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_STAR_PLUS_TREE;6;30;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_TREE;7;30;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_PLUS_TREE;7;30;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_STAR_TREE;7;30;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_STAR_PLUS_TREE;7;30;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_TREE;6;100;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_PLUS_TREE;6;100;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_STAR_TREE;6;100;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_STAR_PLUS_TREE;6;100;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_TREE;7;100;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_PLUS_TREE;7;100;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_STAR_TREE;7;100;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_STAR_PLUS_TREE;7;100;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_TREE;6;100000;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_PLUS_TREE;6;100000;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_STAR_TREE;6;100000;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_STAR_PLUS_TREE;6;100000;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_TREE;7;100000;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_PLUS_TREE;7;100000;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_STAR_TREE;7;100000;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov
+B_STAR_PLUS_TREE;7;100000;C:\Users\User\Documents\CourseWork3\btrees\root\prj\0.1\sol\tests\btrees_lib_tests\gtest\testfiles\University_and_books_eng.csv;Shershakov

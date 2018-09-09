@@ -686,6 +686,17 @@ void BaseBTree::markPageFree(UInt pageNum)
 
 #endif // BTREE_WITH_REUSING_FREE_PAGES
 
+void BaseBTree::writeDot(std::ostream& ostream)
+{
+    if (_keyPrinter == nullptr)
+        throw std::runtime_error("Key printer not set. Can't print");
+
+    ostream << "digraph btree {" << std::endl << "node [shape = record, height = .1];" << std::endl;
+    std::string rootCode("node0");
+    _rootPage.writeDot(ostream, rootCode);
+    ostream << "}" << std::endl;
+}
+
 UInt BaseBTree::allocPageInternal(PageWrapper& pw, UShort keysNum, bool isRoot, bool isLeaf)
 {
     pw.clear();
@@ -1083,6 +1094,40 @@ void BaseBTree::PageWrapper::writePage()
         throw std::runtime_error("Page number not set. Can't write");
 
     _tree->writePage(getPageNum(), _data);
+}
+
+void BaseBTree::PageWrapper::writeDot(std::ostream& ostream, std::string& code)
+{
+    IKeyPrinter* keyPrinter = _tree->_keyPrinter;
+
+    if (keyPrinter == nullptr)
+        throw std::runtime_error("Key printer not set. Can't print");
+
+    ostream << code << "[label = \"";
+
+    UShort keysNum = getKeysNum();
+
+    for (int i = 0; i < keysNum; ++i)
+    {
+        ostream << "<c" << i << ">|";
+        Byte* key = getKey(i);
+        std::string keyString = keyPrinter->print(key, _tree->_recSize);
+        ostream << keyString << "|";
+    }
+
+    ostream << "<c" << keysNum << ">\"];" << std::endl;
+
+    if (!isLeaf())
+    {
+        for (int i = 0; i <= keysNum; ++i)
+        {
+            std::string childCode = code + std::to_string(i);
+            PageWrapper child(_tree);
+            child.readPageFromChild(*this, i);
+            child.writeDot(ostream, childCode);
+            ostream << "\"" << code << "\": c" << i << " -> \"" << childCode << "\"" << std::endl;
+        }
+    }
 }
 
 void BaseBTree::PageWrapper::splitChild(UShort iChild)

@@ -1,0 +1,51 @@
+/**
+ * The script is made by Anton Rigin, group BPI153(2) in 2018.
+ */
+
+struct FILE {
+    struct HEADER {        
+            SetBackColor(cLtGray);
+        //uchar           sign[4];
+        uint            sign;
+            SetForeColor( cDkRed );
+        ushort          order;
+            SetForeColor( cDkGreen );
+        ushort          recSize;
+            SetForeColor( cDkBlue );
+        uint            pages;
+            SetForeColor( cPurple );
+        uint            rootpage;
+    } header;
+
+
+    
+    struct PAGE {
+        SetBackColor(cDkAqua);
+        ushort          info;
+    
+        SetBackColor( cLtAqua );    
+        struct KEY {
+            uchar           key[header.recSize];
+        } keys [ 2 * header.order ] <optimize=true>;
+        
+            SetBackColor (cLtYellow);
+        SetForeColor( cDkPurple );
+        uint           cursors[ (2 * header.order + 1) ] <optimize=true>;
+    } record[ header.pages ] <optimize=true>;
+    
+    
+    struct FREE_PAGES_NUMBERS_AREA {
+            SetBackColor(cDkGray);
+        
+        uint freePagesCounter;
+            SetForeColor(cBlack);
+
+        struct FREE_PAGE_NUMBER {
+               SetBackColor(cGray);
+            
+            uint freePageNumber;
+               SetForeColor(cBlack);
+        } record [freePagesCounter] <optimize=true>;
+    } freePagesNumbersArea <optimize=true>;
+
+} file; 

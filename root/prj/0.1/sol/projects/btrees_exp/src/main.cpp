@@ -24,44 +24,30 @@
 
 const char CSV_DELIM = ';';
 
-const int FULL_KEYS_COUNT = 100000;
-const int PREPARATION_KEYS_COUNT = FULL_KEYS_COUNT / 2;
-const int MEASURING_KEYS_COUNT = FULL_KEYS_COUNT - PREPARATION_KEYS_COUNT;
-
 const std::regex csvFileNameRegex("^(\\S*)\\.csv$");
 
 const int CSV_FILE_NAME_REGEX_BEFORE_EXTENSION = 1;
+
+const char* locale = "Russian";
 
 size_t currentUsedMemory = 0;
 size_t maxUsedMemory = 0;
 
 struct ByteComparator : public BaseBTree::IComparator {
 
-    virtual bool compare(const Byte* lhv, const Byte* rhv, UInt sz) override
-    {
-        for (UInt i = 0; i < sz; ++i)
-        {
-            if (lhv[i] < rhv[i])
-                return true;
-        }
+    virtual bool compare(const Byte* lhv, const Byte* rhv, UInt sz) override;
 
-        return false;
-    }
+    virtual bool isEqual(const Byte* lhv, const Byte* rhv, UInt sz) override;
 
-    virtual bool isEqual(const Byte* lhv, const Byte* rhv, UInt sz) override
-    {
-        for (UInt i = 0; i < sz; ++i)
-        {
-            if (lhv[i] != rhv[i])
-                return false;
-        }
-
-        return true;
-    }
 }; // struct ByteComparator
 
-class DecimalPointLoc: public std::numpunct<char>
-{
+struct IntKeyPrinter : public BaseBTree::IKeyPrinter {
+
+    virtual std::string print(const Byte* key, UInt sz) override;
+
+}; // struct IntKeyPrinter
+
+struct DecimalPointLoc: public std::numpunct<char> {
 
 public:
 
@@ -75,15 +61,18 @@ protected:
 
     char do_decimal_point() const { return ','; }
 
-};
+}; // struct DecimalPointLoc
 
 Experiment parseExperiment(const std::string& line);
 
 BaseBTree::TreeType parseTreeType(const std::string& treeTypeString);
 
-void makeExperiment(const Experiment& experiment, std::ofstream& outputFile, int experimentNumber);
+void makeExperiment(const Experiment& experiment, std::ofstream& outputFile,
+        const std::string& fileNameWithoutExtension, int experimentNumber);
 
 void writeCsvHeader(std::ofstream& outputFile);
+
+void printTreeToDotFile(FileBaseBTree* tree, const std::string& dotFileName);
 
 void* operator new(size_t size);
 
@@ -95,6 +84,8 @@ void operator delete[](void* p) noexcept;
 
 int main(int argc, char* argv[])
 {
+    setlocale(LC_ALL, locale);
+
     if (argc != 2)
     {
         std::cerr << "The count of the command line arguments should be equal to 1"
@@ -146,8 +137,9 @@ int main(int argc, char* argv[])
 
     inputFile.close();
 
-    std::string outputFileName = std::string(match[CSV_FILE_NAME_REGEX_BEFORE_EXTENSION])
-            + "_results" + std::string(".csv");
+    std::string fileNameWithoutExtension = std::string(match[CSV_FILE_NAME_REGEX_BEFORE_EXTENSION]);
+
+    std::string outputFileName = fileNameWithoutExtension + "_results" + std::string(".csv");
     std::ofstream outputFile(outputFileName);
 
     if (!outputFile.is_open())
@@ -165,7 +157,7 @@ int main(int argc, char* argv[])
         std::cout << "Making the experiment " << ++i << "/" << experiments.size() << "..." << std::endl;
         try
         {
-            makeExperiment(*iter, outputFile, i);
+            makeExperiment(*iter, outputFile, fileNameWithoutExtension, i);
             std::cout << "The experiment " << i << "/" << experiments.size() << " is finished" << std::endl;
         }
         catch (std::invalid_argument& e)
@@ -194,13 +186,17 @@ Experiment parseExperiment(const std::string& line)
     std::getline(lineStream, treeOrderString, CSV_DELIM);
     UShort treeOrder = std::stoi(treeOrderString);
 
+    std::string intKeysCountString;
+    std::getline(lineStream, intKeysCountString, CSV_DELIM);
+    int intKeysCount = std::stoi(intKeysCountString);
+
     std::string dataFilePath;
     std::getline(lineStream, dataFilePath, CSV_DELIM);
 
     std::string searchedName;
     std::getline(lineStream, searchedName, CSV_DELIM);
 
-    return Experiment(treeType, treeOrder, dataFilePath, searchedName);
+    return Experiment(treeType, treeOrder, intKeysCount, dataFilePath, searchedName);
 }
 
 BaseBTree::TreeType parseTreeType(const std::string& treeTypeString)
@@ -217,26 +213,34 @@ BaseBTree::TreeType parseTreeType(const std::string& treeTypeString)
         throw std::invalid_argument("Cannot parse tree type: " + treeTypeString);
 }
 
-void makeExperiment(const Experiment& experiment, std::ofstream& outputFile, int experimentNumber)
+void makeExperiment(const Experiment& experiment, std::ofstream& outputFile,
+        const std::string& fileNameWithoutExtension, int experimentNumber)
 {
     ExperimentResult experimentResult(experiment);
 
     Indexer indexer;
-    indexer.create(experiment.getTreeType(), experiment.getTreeOrder(), std::to_string(experimentNumber)
-            + std::string(".xibt"));
+    indexer.create(experiment.getTreeType(), experiment.getTreeOrder(), fileNameWithoutExtension + std::string("_")
+            + std::to_string(experimentNumber) + std::string(".xibt"));
 
     ByteComparator comparator;
+    IntKeyPrinter keyPrinter;
     FileBaseBTree* tree = new FileBaseBTree(experiment.getTreeType(), experiment.getTreeOrder(), sizeof(int),
-            &comparator, std::string("int_") + std::to_string(experimentNumber) + std::string(".xibt"));
+            &comparator, fileNameWithoutExtension + std::string("_int_")
+            + std::to_string(experimentNumber) + std::string(".xibt"));
+    tree->getTree()->setKeyPrinter(&keyPrinter);
+
+    int fullKeysCount = experiment.getIntKeysCount();
+    int preparationKeysCount = fullKeysCount / 2;
+    int measuringKeysCount = fullKeysCount - preparationKeysCount;
 
     clock_t time = 0;
     size_t usedMemory = 0;
     UInt diskOperationsCount = 0;
 
     clock_t start = std::clock();
-    for (int i = 0; i < FULL_KEYS_COUNT; ++i)
+    for (int i = 0; i < fullKeysCount; ++i)
     {
-        if (i >= PREPARATION_KEYS_COUNT)
+        if (i >= preparationKeysCount)
         {
             maxUsedMemory = 0;
             tree->getTree()->resetDiskOperationsCount();
@@ -252,16 +256,19 @@ void makeExperiment(const Experiment& experiment, std::ofstream& outputFile, int
     clock_t end = std::clock();
     time = end - start;
 
-    usedMemory /= MEASURING_KEYS_COUNT;
+    printTreeToDotFile(tree, fileNameWithoutExtension + std::string("_int_")
+            + std::to_string(experimentNumber) + std::string(".gv"));
+
+    usedMemory /= measuringKeysCount;
     experimentResult.setInsertionTime(time);
     experimentResult.setInsertionUsedMemory(usedMemory);
-    experimentResult.setInsertionDiskOperationsCount(((double) diskOperationsCount) / MEASURING_KEYS_COUNT);
+    experimentResult.setInsertionDiskOperationsCount(((double) diskOperationsCount) / measuringKeysCount);
 
     usedMemory = 0;
     diskOperationsCount = 0;
 
     start = std::clock();
-    for (int i = 0; i < FULL_KEYS_COUNT; ++i)
+    for (int i = 0; i < fullKeysCount; ++i)
     {
         maxUsedMemory = 0;
         tree->getTree()->resetDiskOperationsCount();
@@ -274,10 +281,10 @@ void makeExperiment(const Experiment& experiment, std::ofstream& outputFile, int
     end = std::clock();
     time += end - start;
 
-    usedMemory /= FULL_KEYS_COUNT;
+    usedMemory /= fullKeysCount;
     experimentResult.setSearchTime(time);
     experimentResult.setSearchUsedMemory(usedMemory);
-    experimentResult.setSearchDiskOperationsCount(((double) diskOperationsCount) / FULL_KEYS_COUNT);
+    experimentResult.setSearchDiskOperationsCount(((double) diskOperationsCount) / fullKeysCount);
     experimentResult.setMaxSearchDepth(tree->getTree()->getMaxSearchDepth());
 
     time = 0;
@@ -285,7 +292,7 @@ void makeExperiment(const Experiment& experiment, std::ofstream& outputFile, int
     diskOperationsCount = 0;
 
     start = std::clock();
-    for (int i = 0; i < FULL_KEYS_COUNT; ++i)
+    for (int i = 0; i < fullKeysCount; ++i)
     {
         maxUsedMemory = 0;
         tree->getTree()->resetDiskOperationsCount();
@@ -298,10 +305,10 @@ void makeExperiment(const Experiment& experiment, std::ofstream& outputFile, int
     end = std::clock();
     time += end - start;
 
-    usedMemory /= FULL_KEYS_COUNT;
+    usedMemory /= fullKeysCount;
     experimentResult.setRemovingTime(time);
     experimentResult.setRemovingUsedMemory(usedMemory);
-    experimentResult.setRemovingDiskOperationsCount(((double) diskOperationsCount) / FULL_KEYS_COUNT);
+    experimentResult.setRemovingDiskOperationsCount(((double) diskOperationsCount) / fullKeysCount);
 
     indexer.resetDiskOperationsCount();
     start = std::clock();
@@ -314,6 +321,9 @@ void makeExperiment(const Experiment& experiment, std::ofstream& outputFile, int
     experimentResult.setIndexingTime(time);
     experimentResult.setIndexingUsedMemory(usedMemory);
     experimentResult.setIndexingDiskOperationsCount(diskOperationsCount);
+
+    printTreeToDotFile(indexer.getTree(), fileNameWithoutExtension +  std::string("_index_")
+            + std::to_string(experimentNumber) + std::string(".gv"));
 
     const std::string& searchedName = experiment.getSearchedName();
 
@@ -330,8 +340,8 @@ void makeExperiment(const Experiment& experiment, std::ofstream& outputFile, int
     experimentResult.setIndexSearchingDiskOperationsCount(diskOperationsCount);
     experimentResult.setIndexMaxSearchDepth(indexer.getMaxSearchDepth());
 
-    DecimalPointLoc decimalPointLoc;
-    outputFile.imbue(std::locale(std::locale(), &decimalPointLoc));
+    DecimalPointLoc* decimalPointLoc = new DecimalPointLoc();
+    outputFile.imbue(std::locale(std::locale(), decimalPointLoc));
     outputFile.precision(3);
     outputFile << experimentNumber << CSV_DELIM
             << experimentResult.getInsertionTime() << CSV_DELIM
@@ -361,6 +371,52 @@ void writeCsvHeader(std::ofstream& outputFile)
             << "InsertionDiskOperationsCount;SearchDiskOperationsCount;RemovingDiskOperationsCount;"
             << "IndexingDiskOperationsCount;IndexSearchingDiskOperationsCount;"
             << "MaxSearchDepth;IndexMaxSearchDepth" << std::endl;
+}
+
+void printTreeToDotFile(FileBaseBTree* tree, const std::string& dotFileName)
+{
+    std::ofstream dotFile(dotFileName);
+
+    if (!dotFile.is_open())
+    {
+        std::cerr << "Cannot open dot file " << dotFileName << " for writing" << std::endl;
+
+        return;
+    }
+
+    tree->getTree()->writeDot(dotFile);
+
+    dotFile.close();
+}
+
+bool ByteComparator::compare(const Byte* lhv, const Byte* rhv, UInt sz)
+{
+    for (UInt i = 0; i < sz; ++i)
+    {
+        if (lhv[i] < rhv[i])
+            return true;
+    }
+
+    return false;
+}
+
+bool ByteComparator::isEqual(const Byte* lhv, const Byte* rhv, UInt sz)
+{
+    for (UInt i = 0; i < sz; ++i)
+    {
+        if (lhv[i] != rhv[i])
+            return false;
+    }
+
+    return true;
+}
+
+std::string IntKeyPrinter::print(const Byte* key, UInt sz)
+{
+    if (sz != 4)
+        throw std::invalid_argument("Int key should have size equal to 4 bytes");
+
+    return std::to_string(*((int*) key));
 }
 
 void* operator new(size_t size)

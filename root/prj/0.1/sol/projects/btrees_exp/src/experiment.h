@@ -23,8 +23,9 @@ class Experiment
 
 public:
 
-    Experiment(BaseBTree::TreeType treeType, UShort treeOrder, std::string dataFilePath, std::string searchedName)
-            : _treeType(treeType), _treeOrder(treeOrder),
+    Experiment(BaseBTree::TreeType treeType, UShort treeOrder, int intKeysCount,
+            std::string dataFilePath, std::string searchedName)
+            : _treeType(treeType), _treeOrder(treeOrder), _intKeysCount(intKeysCount),
             _dataFilePath(std::move(dataFilePath)), _searchedName(std::move(searchedName)) { }
 
     Experiment(const Experiment& other) = default;
@@ -39,6 +40,8 @@ public:
 
     UShort getTreeOrder() const { return _treeOrder; }
 
+    int getIntKeysCount() const { return _intKeysCount; }
+
     const std::string& getDataFilePath() const { return _dataFilePath; }
 
     const std::string& getSearchedName() const { return _searchedName; }
@@ -48,6 +51,8 @@ private:
     BaseBTree::TreeType _treeType;
 
     UShort _treeOrder;
+
+    int _intKeysCount;
 
     std::string _dataFilePath;
 
