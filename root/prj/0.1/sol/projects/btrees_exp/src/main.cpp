@@ -144,7 +144,7 @@ int main(int argc, char* argv[])
 
     if (!outputFile.is_open())
     {
-        std::cerr << "Cannot open the output file " << inputFileName << " for reading" << std::endl;
+        std::cerr << "Cannot open the output file " << inputFileName << " for writing" << std::endl;
 
         return -1;
     }
