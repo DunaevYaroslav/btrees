@@ -1,0 +1,4 @@
+digraph btree {
+node [shape = record, height = .1];
+node0[label = "<c0>|Drankov|<c1>|Podbelsky|<c2>|Podbelsky|<c3>|Podbelsky|<c4>|Podbelsky|<c5>|Podbelsky|<c6>|Podbelsky|<c7>|Podbelsky|<c8>|Podbelsky|<c9>|Podbelsky|<c10>|Podbelsky|<c11>|Podbelsky|<c12>|Podbelsky|<c13>|Podbelsky|<c14>|Podbelsky|<c15>|Podbelsky|<c16>|Podbelsky|<c17>|Podbelsky|<c18>|Rigin|<c19>|Shershakov|<c20>"];
+}
